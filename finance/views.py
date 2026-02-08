@@ -2,9 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.db.models import ProtectedError
 
-from .models import Transaction
-from .forms import TransactionForm, TransactionFilterForm
+from .models import Transaction, Category, Budget
+from .forms import TransactionForm, TransactionFilterForm, CategoryForm, BudgetForm
 from .services import (
     create_transaction,
     update_transaction,
@@ -105,4 +106,168 @@ def transaction_delete(request, pk):
 
     return render(request, 'finance/transaction_confirm_delete.html', {
         'transaction': transaction,
+    })
+
+
+# ─── Category Views ──────────────────────────────────────────────────────────
+
+@login_required
+def category_list(request):
+    """List all categories for the current user."""
+    categories = Category.objects.filter(user=request.user).order_by('type', 'name')
+    # Count transactions per category
+    from django.db.models import Count
+    categories = categories.annotate(transaction_count=Count('transactions'))
+    return render(request, 'finance/category_list.html', {'categories': categories})
+
+
+@login_required
+def category_create(request):
+    """Create a new category."""
+    if request.method == 'POST':
+        form = CategoryForm(request.POST)
+        if form.is_valid():
+            category = form.save(commit=False)
+            category.user = request.user
+            try:
+                category.full_clean()
+                category.save()
+                messages.success(request, f'Category "{category.name}" created.')
+                return redirect('finance:category_list')
+            except ValidationError as e:
+                for field, errs in e.message_dict.items():
+                    for err in errs:
+                        form.add_error(field if field != '__all__' else None, err)
+    else:
+        form = CategoryForm()
+
+    return render(request, 'finance/category_form.html', {
+        'form': form,
+        'title': 'Add Category',
+    })
+
+
+@login_required
+def category_delete(request, pk):
+    """Delete a category — blocked if it has transactions (PROTECT)."""
+    category = get_object_or_404(Category, pk=pk)
+
+    if category.user_id != request.user.id:
+        raise PermissionDenied
+
+    if request.method == 'POST':
+        try:
+            category.delete()
+            messages.success(request, f'Category "{category.name}" deleted.')
+        except ProtectedError:
+            tx_count = category.transactions.count()
+            messages.error(
+                request,
+                f'Cannot delete "{category.name}" — it has {tx_count} transaction(s). '
+                f'Delete or reassign those transactions first.'
+            )
+        return redirect('finance:category_list')
+
+    return render(request, 'finance/category_confirm_delete.html', {
+        'category': category,
+    })
+
+
+# ─── Budget Views ────────────────────────────────────────────────────────────
+
+@login_required
+def budget_list(request):
+    """List all budgets for the current user with progress."""
+    budgets = Budget.objects.filter(user=request.user).select_related('category')
+
+    # Enrich with computed properties for template
+    budget_data = []
+    for budget in budgets:
+        budget_data.append({
+            'budget': budget,
+            'spent': budget.spent,
+            'percentage': budget.percentage_used,
+            'is_overrun': budget.is_overrun,
+            'remaining': budget.limit_amount - budget.spent,
+        })
+
+    return render(request, 'finance/budget_list.html', {'budget_data': budget_data})
+
+
+@login_required
+def budget_create(request):
+    """Create a new monthly budget."""
+    if request.method == 'POST':
+        form = BudgetForm(request.POST, user=request.user)
+        if form.is_valid():
+            budget = form.save(commit=False)
+            budget.user = request.user
+            try:
+                budget.full_clean()
+                budget.save()
+                messages.success(
+                    request,
+                    f'Budget of {budget.limit_amount} set for "{budget.category.name}" '
+                    f'({budget.month.strftime("%b %Y")}).'
+                )
+                return redirect('finance:budget_list')
+            except ValidationError as e:
+                for field, errs in e.message_dict.items():
+                    for err in errs:
+                        form.add_error(field if field != '__all__' else None, err)
+    else:
+        form = BudgetForm(user=request.user)
+
+    return render(request, 'finance/budget_form.html', {
+        'form': form,
+        'title': 'Set Budget',
+    })
+
+
+@login_required
+def budget_edit(request, pk):
+    """Edit an existing budget."""
+    budget = get_object_or_404(Budget, pk=pk)
+
+    if budget.user_id != request.user.id:
+        raise PermissionDenied
+
+    if request.method == 'POST':
+        form = BudgetForm(request.POST, instance=budget, user=request.user)
+        if form.is_valid():
+            budget = form.save(commit=False)
+            try:
+                budget.full_clean()
+                budget.save()
+                messages.success(request, 'Budget updated.')
+                return redirect('finance:budget_list')
+            except ValidationError as e:
+                for field, errs in e.message_dict.items():
+                    for err in errs:
+                        form.add_error(field if field != '__all__' else None, err)
+    else:
+        form = BudgetForm(instance=budget, user=request.user)
+
+    return render(request, 'finance/budget_form.html', {
+        'form': form,
+        'title': 'Edit Budget',
+        'budget': budget,
+    })
+
+
+@login_required
+def budget_delete(request, pk):
+    """Delete a budget."""
+    budget = get_object_or_404(Budget, pk=pk)
+
+    if budget.user_id != request.user.id:
+        raise PermissionDenied
+
+    if request.method == 'POST':
+        budget.delete()
+        messages.success(request, 'Budget deleted.')
+        return redirect('finance:budget_list')
+
+    return render(request, 'finance/budget_confirm_delete.html', {
+        'budget': budget,
     })

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Category — Finance Tracker{% endblock %}
+
+{% block content %}
+<div style="max-width: 500px; margin: 0 auto;">
+    <div class="card">
+        <h2>Delete Category</h2>
+        <p>Are you sure you want to delete the category <strong>"{{ category.name }}"</strong> ({{
+            category.get_type_display }})?</p>
+
+        {% if category.transactions.count > 0 %}
+        <div
+            style="background: #fff3cd; color: #856404; padding: 0.75rem; border-radius: 4px; margin: 1rem 0; border: 1px solid #ffeaa7;">
+            ⚠️ This category has <strong>{{ category.transactions.count }}</strong> transaction(s).
+            You must delete or reassign them before deleting this category.
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                <a href="{% url 'finance:category_list' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

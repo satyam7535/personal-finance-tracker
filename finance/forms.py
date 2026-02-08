@@ -1,5 +1,5 @@
 from django import forms
-from .models import Transaction, Category, Currency
+from .models import Transaction, Category, Currency, Budget
 
 
 class TransactionForm(forms.ModelForm):
@@ -51,3 +51,40 @@ class TransactionFilterForm(forms.Form):
         super().__init__(*args, **kwargs)
         if user:
             self.fields['category'].queryset = Category.objects.filter(user=user)
+
+
+class CategoryForm(forms.ModelForm):
+    """Form to create/edit categories."""
+    class Meta:
+        model = Category
+        fields = ['name', 'type', 'description']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Optional description...'}),
+        }
+
+
+class BudgetForm(forms.ModelForm):
+    """Form to create/edit monthly budgets for expense categories."""
+    class Meta:
+        model = Budget
+        fields = ['category', 'limit_amount', 'month']
+        widgets = {
+            'month': forms.DateInput(attrs={'type': 'month'}),
+            'limit_amount': forms.NumberInput(attrs={'step': '0.01', 'placeholder': '0.00'}),
+        }
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user:
+            # Only expense categories can have budgets
+            self.fields['category'].queryset = Category.objects.filter(
+                user=user, type='EXPENSE'
+            )
+        self.fields['category'].empty_label = '— Select Expense Category —'
+
+    def clean_month(self):
+        """Normalize month to first day."""
+        month = self.cleaned_data.get('month')
+        if month:
+            return month.replace(day=1)
+        return month

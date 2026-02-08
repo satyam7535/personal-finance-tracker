@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Categories — Finance Tracker{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h2 style="margin: 0;">Categories</h2>
+    <a href="{% url 'finance:category_create' %}" class="btn btn-success">+ Add Category</a>
+</div>
+
+{% if categories %}
+<div class="grid grid-3">
+    {% regroup categories by get_type_display as type_groups %}
+    {% for group in type_groups %}
+    <div class="card">
+        <h3 style="margin-bottom: 1rem;
+            {% if group.grouper == 'Income' %}color: #27ae60;
+            {% elif group.grouper == 'Expense' %}color: #e74c3c;
+            {% else %}color: #f39c12;{% endif %}">
+            {{ group.grouper }}
+        </h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Txns</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cat in group.list %}
+                <tr>
+                    <td>{{ cat.name }}</td>
+                    <td>{{ cat.transaction_count }}</td>
+                    <td>
+                        <a href="{% url 'finance:category_delete' cat.pk %}" class="btn btn-danger btn-sm">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card">
+    <p style="text-align: center; color: #888; padding: 2rem;">
+        No categories yet. <a href="{% url 'finance:category_create' %}">Create your first category</a>.
+    </p>
+</div>
+{% endif %}
+{% endblock %}
