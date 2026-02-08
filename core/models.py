@@ -30,6 +30,7 @@ class UserProfile(models.Model):
 def create_or_update_user_profile(sender, instance, created, **kwargs):
     """Auto-create UserProfile when a new User is created."""
     if created:
-        UserProfile.objects.create(user=instance)
+        UserProfile.objects.get_or_create(user=instance)
     else:
-        instance.profile.save()
+        # Handle case where profile doesn't exist yet (e.g., superuser)
+        UserProfile.objects.get_or_create(user=instance)
