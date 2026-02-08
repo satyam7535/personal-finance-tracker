@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}Register — Finance Tracker{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="card">
+        <h2>Create Account</h2>
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}
+                <small class="helptext">{{ field.help_text }}</small>
+                {% endif %}
+                {% for error in field.errors %}
+                <ul class="errorlist">
+                    <li>{{ error }}</li>
+                </ul>
+                {% endfor %}
+            </div>
+            {% endfor %}
+
+            <button type="submit" class="btn btn-success" style="width:100%; margin-top:0.5rem;">Register</button>
+        </form>
+        <p style="text-align:center; margin-top:1rem; font-size:0.9rem;">
+            Already have an account? <a href="{% url 'core:login' %}">Log in</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
