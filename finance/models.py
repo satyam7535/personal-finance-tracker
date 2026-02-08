@@ -244,16 +244,36 @@ class Budget(models.Model):
 
     @property
     def spent(self):
-        """Total spent in this category for this budget's month."""
-        from django.db.models import Sum
-        total = Transaction.objects.filter(
+        """
+        Total spent in this category for this budget's month,
+        normalised to the user's preferred currency via USD.
+
+        Each transaction's amount is multiplied by its own
+        currency.exchange_rate_to_usd, then divided by the
+        target (preferred) currency's rate — giving a correct
+        cross-currency total.
+        """
+        from django.db.models import Sum, F
+        from finance.currency_utils import get_user_preferred_currency
+
+        target = get_user_preferred_currency(self.user)
+        target_rate = target.exchange_rate_to_usd or Decimal('1')
+
+        # Sum(amount * from_rate) gives total in USD
+        total_usd = Transaction.objects.filter(
             user=self.user,
             category=self.category,
             type='EXPENSE',
             date__year=self.month.year,
             date__month=self.month.month,
-        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-        return total
+        ).aggregate(
+            total=Sum(F('amount') * F('currency__exchange_rate_to_usd'))
+        )['total'] or Decimal('0.00')
+
+        # Convert USD total to preferred currency
+        return (total_usd / target_rate).quantize(
+            Decimal('0.01'), rounding=ROUND_HALF_UP
+        )
 
     @property
     def percentage_used(self):

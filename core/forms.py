@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from .models import UserProfile
+from finance.models import Currency
 
 
 class UserRegistrationForm(UserCreationForm):
@@ -39,20 +40,16 @@ class UserUpdateForm(forms.ModelForm):
 
 class UserProfileForm(forms.ModelForm):
     """Form to update profile preferences."""
-    CURRENCY_CHOICES = [
-        ('USD', 'USD - US Dollar'),
-        ('EUR', 'EUR - Euro'),
-        ('GBP', 'GBP - British Pound'),
-        ('INR', 'INR - Indian Rupee'),
-        ('JPY', 'JPY - Japanese Yen'),
-        ('AUD', 'AUD - Australian Dollar'),
-        ('CAD', 'CAD - Canadian Dollar'),
-        ('CHF', 'CHF - Swiss Franc'),
-        ('CNY', 'CNY - Chinese Yuan'),
-        ('SGD', 'SGD - Singapore Dollar'),
-    ]
-    preferred_currency = forms.ChoiceField(choices=CURRENCY_CHOICES)
+    preferred_currency = forms.ChoiceField(choices=[])
 
     class Meta:
         model = UserProfile
         fields = ['preferred_currency']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Dynamically populate from Currency table
+        self.fields['preferred_currency'].choices = [
+            (c.code, f"{c.code} - {c.name}")
+            for c in Currency.objects.filter(is_active=True).order_by('code')
+        ]

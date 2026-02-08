@@ -33,43 +33,49 @@
                 <th>Category</th>
                 <th>Description</th>
                 <th>Amount</th>
-                <th>Currency</th>
+                <th>In {{ preferred_currency.code }}</th>
                 <th>Receipt</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
-            {% for tx in transactions %}
+            {% for item in transactions %}
             <tr>
-                <td>{{ tx.date|date:"M d, Y" }}</td>
+                <td>{{ item.tx.date|date:"M d, Y" }}</td>
                 <td>
                     <span style="padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.8rem; font-weight: 600;
-                        {% if tx.type == 'INCOME' %}background: #d4edda; color: #155724;
-                        {% elif tx.type == 'EXPENSE' %}background: #f8d7da; color: #721c24;
+                        {% if item.tx.type == 'INCOME' %}background: #d4edda; color: #155724;
+                        {% elif item.tx.type == 'EXPENSE' %}background: #f8d7da; color: #721c24;
                         {% else %}background: #fff3cd; color: #856404;{% endif %}">
-                        {{ tx.get_type_display }}
+                        {{ item.tx.get_type_display }}
                     </span>
                 </td>
-                <td>{{ tx.category.name }}</td>
-                <td>{{ tx.description|truncatewords:8|default:"—" }}</td>
+                <td>{{ item.tx.category.name }}</td>
+                <td>{{ item.tx.description|truncatewords:8|default:"—" }}</td>
                 <td style="font-weight: 600;
-                    {% if tx.type == 'INCOME' %}color: #27ae60;
-                    {% elif tx.amount < 0 %}color: #e67e22;
-                    {% elif tx.type == 'EXPENSE' %}color: #e74c3c;
+                    {% if item.tx.type == 'INCOME' %}color: #27ae60;
+                    {% elif item.tx.amount < 0 %}color: #e67e22;
+                    {% elif item.tx.type == 'EXPENSE' %}color: #e74c3c;
                     {% else %}color: #f39c12;{% endif %}">
-                    {{ tx.currency.symbol }}{{ tx.amount }}
+                    {{ item.tx.currency.symbol }}{{ item.tx.amount }}
                 </td>
-                <td>{{ tx.currency.code }}</td>
-                <td>
-                    {% if tx.receipt %}
-                    <a href="{{ tx.receipt.url }}" target="_blank" class="btn btn-secondary btn-sm">View</a>
+                <td style="color: #555;">
+                    {% if item.tx.currency.code != preferred_currency.code %}
+                    {{ preferred_currency.symbol }}{{ item.converted }}
                     {% else %}
                     —
                     {% endif %}
                 </td>
                 <td>
-                    <a href="{% url 'finance:transaction_edit' tx.pk %}" class="btn btn-primary btn-sm">Edit</a>
-                    <a href="{% url 'finance:transaction_delete' tx.pk %}" class="btn btn-danger btn-sm">Delete</a>
+                    {% if item.tx.receipt %}
+                    <a href="{{ item.tx.receipt.url }}" target="_blank" class="btn btn-secondary btn-sm">View</a>
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'finance:transaction_edit' item.tx.pk %}" class="btn btn-primary btn-sm">Edit</a>
+                    <a href="{% url 'finance:transaction_delete' item.tx.pk %}" class="btn btn-danger btn-sm">Delete</a>
                 </td>
             </tr>
             {% endfor %}

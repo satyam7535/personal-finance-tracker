@@ -12,6 +12,7 @@ from .services import (
     delete_transaction,
     get_user_transactions,
 )
+from .currency_utils import get_user_preferred_currency, convert_amount
 
 
 @login_required
@@ -32,9 +33,19 @@ def transaction_list(request):
 
     transactions = get_user_transactions(request.user, filters)
 
+    # Preferred-currency conversion
+    preferred = get_user_preferred_currency(request.user)
+    enriched = []
+    for tx in transactions:
+        enriched.append({
+            'tx': tx,
+            'converted': convert_amount(tx.amount, tx.currency, preferred),
+        })
+
     context = {
-        'transactions': transactions,
+        'transactions': enriched,
         'filter_form': filter_form,
+        'preferred_currency': preferred,
     }
     return render(request, 'finance/transaction_list.html', context)
 
@@ -179,6 +190,7 @@ def category_delete(request, pk):
 def budget_list(request):
     """List all budgets for the current user with progress."""
     budgets = Budget.objects.filter(user=request.user).select_related('category')
+    preferred = get_user_preferred_currency(request.user)
 
     # Enrich with computed properties for template
     budget_data = []
@@ -191,7 +203,10 @@ def budget_list(request):
             'remaining': budget.limit_amount - budget.spent,
         })
 
-    return render(request, 'finance/budget_list.html', {'budget_data': budget_data})
+    return render(request, 'finance/budget_list.html', {
+        'budget_data': budget_data,
+        'preferred_currency': preferred,
+    })
 
 
 @login_required
