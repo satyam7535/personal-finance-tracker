@@ -308,6 +308,7 @@
         <div class="links">
             {% if user.is_authenticated %}
             <a href="{% url 'reports:dashboard' %}">Dashboard</a>
+            <a href="{% url 'finance:transaction_list' %}">Transactions</a>
             <a href="{% url 'reports:monthly_report' %}">Reports</a>
             {% endif %}
         </div>
