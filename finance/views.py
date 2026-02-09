@@ -103,6 +103,30 @@ def transaction_edit(request, pk):
 
 
 @login_required
+def transaction_detail(request, pk):
+    """View transaction details including receipt."""
+    transaction = get_object_or_404(
+        Transaction.objects.select_related('category', 'currency'),
+        pk=pk,
+    )
+    if transaction.user_id != request.user.id:
+        raise PermissionDenied
+
+    preferred = get_user_preferred_currency(request.user)
+    converted = convert_amount(transaction.amount, transaction.currency, preferred)
+    is_image = False
+    if transaction.receipt:
+        is_image = transaction.receipt.name.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
+
+    return render(request, 'finance/transaction_detail.html', {
+        'transaction': transaction,
+        'converted': converted,
+        'preferred_currency': preferred,
+        'is_image': is_image,
+    })
+
+
+@login_required
 def transaction_delete(request, pk):
     """Delete a transaction with confirmation."""
     transaction = get_object_or_404(Transaction, pk=pk)

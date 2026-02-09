@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Transaction Detail — Finance Tracker{% endblock %}
+
+{% block content %}
+<div style="max-width: 700px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="margin: 0;">Transaction Detail</h2>
+        <a href="{% url 'finance:transaction_list' %}" class="btn btn-secondary btn-sm">← Back to List</a>
+    </div>
+
+    <div class="card">
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <th
+                    style="text-align: left; padding: 0.6rem 1rem; border-bottom: 1px solid #eee; width: 35%; color: #666;">
+                    Date</th>
+                <td style="padding: 0.6rem 1rem; border-bottom: 1px solid #eee;">{{ transaction.date|date:"F d, Y" }}
+                </td>
+            </tr>
+            <tr>
+                <th style="text-align: left; padding: 0.6rem 1rem; border-bottom: 1px solid #eee; color: #666;">Type
+                </th>
+                <td style="padding: 0.6rem 1rem; border-bottom: 1px solid #eee;">
+                    <span style="padding: 0.2rem 0.6rem; border-radius: 3px; font-size: 0.85rem; font-weight: 600;
+                        {% if transaction.type == 'INCOME' %}background: #d4edda; color: #155724;
+                        {% elif transaction.type == 'EXPENSE' %}background: #f8d7da; color: #721c24;
+                        {% else %}background: #fff3cd; color: #856404;{% endif %}">
+                        {{ transaction.get_type_display }}
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <th style="text-align: left; padding: 0.6rem 1rem; border-bottom: 1px solid #eee; color: #666;">Category
+                </th>
+                <td style="padding: 0.6rem 1rem; border-bottom: 1px solid #eee;">{{ transaction.category.name }}</td>
+            </tr>
+            <tr>
+                <th style="text-align: left; padding: 0.6rem 1rem; border-bottom: 1px solid #eee; color: #666;">Amount
+                </th>
+                <td style="padding: 0.6rem 1rem; border-bottom: 1px solid #eee; font-weight: 700; font-size: 1.1rem;
+                    {% if transaction.type == 'INCOME' %}color: #27ae60;
+                    {% elif transaction.amount < 0 %}color: #e67e22;
+                    {% elif transaction.type == 'EXPENSE' %}color: #e74c3c;
+                    {% else %}color: #f39c12;{% endif %}">
+                    {{ transaction.currency.symbol }}{{ transaction.amount }}
+                    <span style="font-weight: 400; font-size: 0.85rem; color: #888;">({{ transaction.currency.code
+                        }})</span>
+                </td>
+            </tr>
+            {% if transaction.currency.code != preferred_currency.code %}
+            <tr>
+                <th style="text-align: left; padding: 0.6rem 1rem; border-bottom: 1px solid #eee; color: #666;">In {{
+                    preferred_currency.code }}</th>
+                <td style="padding: 0.6rem 1rem; border-bottom: 1px solid #eee; color: #555;">{{
+                    preferred_currency.symbol }}{{ converted }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <th style="text-align: left; padding: 0.6rem 1rem; border-bottom: 1px solid #eee; color: #666;">
+                    Description</th>
+                <td style="padding: 0.6rem 1rem; border-bottom: 1px solid #eee;">{{ transaction.description|default:"—"
+                    }}</td>
+            </tr>
+            <tr>
+                <th style="text-align: left; padding: 0.6rem 1rem; border-bottom: 1px solid #eee; color: #666;">Created
+                </th>
+                <td style="padding: 0.6rem 1rem; border-bottom: 1px solid #eee;">{{ transaction.created_at|date:"F d, Y
+                    H:i" }}</td>
+            </tr>
+            <tr>
+                <th style="text-align: left; padding: 0.6rem 1rem; color: #666;">Last Updated</th>
+                <td style="padding: 0.6rem 1rem;">{{ transaction.updated_at|date:"F d, Y H:i" }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Receipt Section -->
+    <div class="card" style="margin-top: 1.5rem;">
+        <h3 style="margin-top: 0;">Receipt</h3>
+        {% if transaction.receipt %}
+        {% if is_image %}
+        <div style="text-align: center; margin-bottom: 1rem;">
+            <img src="{{ transaction.receipt.url }}" alt="Receipt"
+                style="max-width: 100%; max-height: 500px; border-radius: 6px; border: 1px solid #ddd;">
+        </div>
+        {% else %}
+        <div style="text-align: center; margin-bottom: 1rem; padding: 2rem; background: #f8f9fa; border-radius: 6px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.5">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+            </svg>
+            <p style="margin: 0.5rem 0 0; color: #666;">PDF Document</p>
+        </div>
+        {% endif %}
+        <div style="display: flex; gap: 0.5rem; justify-content: center;">
+            <a href="{{ transaction.receipt.url }}" target="_blank" class="btn btn-primary btn-sm">View Full Size</a>
+            <a href="{{ transaction.receipt.url }}" download class="btn btn-secondary btn-sm">Download</a>
+        </div>
+        {% else %}
+        <p style="text-align: center; color: #888; padding: 1rem 0;">No receipt attached.</p>
+        {% endif %}
+    </div>
+
+    <!-- Actions -->
+    <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+        <a href="{% url 'finance:transaction_edit' transaction.pk %}" class="btn btn-primary">Edit</a>
+        <a href="{% url 'finance:transaction_delete' transaction.pk %}" class="btn btn-danger">Delete</a>
+    </div>
+</div>
+{% endblock %}

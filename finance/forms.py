@@ -15,7 +15,18 @@ class TransactionForm(forms.ModelForm):
             'date': forms.DateInput(attrs={'type': 'date'}),
             'description': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Optional description...'}),
             'amount': forms.NumberInput(attrs={'step': '0.01', 'placeholder': '0.00'}),
+            'receipt': forms.ClearableFileInput(attrs={'accept': 'image/*,.pdf'}),
         }
+
+    def clean_receipt(self):
+        receipt = self.cleaned_data.get('receipt')
+        if receipt and hasattr(receipt, 'content_type'):
+            allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']
+            if receipt.content_type not in allowed:
+                raise forms.ValidationError('Only images (JPG, PNG, GIF, WebP) and PDF files are allowed.')
+            if receipt.size > 5 * 1024 * 1024:  # 5 MB
+                raise forms.ValidationError('File size must be under 5 MB.')
+        return receipt
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
