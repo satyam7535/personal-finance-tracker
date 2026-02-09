@@ -21,4 +21,9 @@ urlpatterns = [
     path('budgets/add/', views.budget_create, name='budget_create'),
     path('budgets/<int:pk>/edit/', views.budget_edit, name='budget_edit'),
     path('budgets/<int:pk>/delete/', views.budget_delete, name='budget_delete'),
+
+    # Notifications
+    path('notifications/', views.notification_list, name='notification_list'),
+    path('notifications/<int:pk>/read/', views.notification_mark_read, name='notification_mark_read'),
+    path('notifications/clear/', views.notification_clear_all, name='notification_clear_all'),
 ]

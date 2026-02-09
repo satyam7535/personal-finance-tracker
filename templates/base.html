@@ -298,6 +298,27 @@
             max-width: 420px;
             margin: 4rem auto;
         }
+
+        /* ─── Notification badge ───────────────────────────────────── */
+        .nav-notif {
+            position: relative;
+        }
+
+        .notif-badge {
+            position: absolute;
+            top: -8px;
+            right: -12px;
+            background: #e74c3c;
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 700;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -312,6 +333,7 @@
             <a href="{% url 'finance:category_list' %}">Categories</a>
             <a href="{% url 'finance:budget_list' %}">Budgets</a>
             <a href="{% url 'reports:monthly_report' %}">Reports</a>
+            {% include "includes/nav_notifications.html" %}
             {% endif %}
         </div>
         <div class="user-info">

@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import ProtectedError
 
-from .models import Transaction, Category, Budget
+from .models import Transaction, Category, Budget, Notification
 from .forms import TransactionForm, TransactionFilterForm, CategoryForm, BudgetForm
 from .services import (
     create_transaction,
@@ -310,3 +310,38 @@ def budget_delete(request, pk):
     return render(request, 'finance/budget_confirm_delete.html', {
         'budget': budget,
     })
+
+
+# ─── Notification Views ──────────────────────────────────────────────────────
+
+@login_required
+def notification_list(request):
+    """List all notifications for the current user."""
+    notifications = Notification.objects.filter(user=request.user)
+
+    # Mark all as read on page visit
+    unread = notifications.filter(is_read=False)
+    if unread.exists():
+        unread.update(is_read=True)
+
+    return render(request, 'finance/notification_list.html', {
+        'notifications': notifications,
+    })
+
+
+@login_required
+def notification_mark_read(request, pk):
+    """Mark a single notification as read."""
+    notification = get_object_or_404(Notification, pk=pk, user=request.user)
+    notification.is_read = True
+    notification.save(update_fields=['is_read'])
+    return redirect('finance:notification_list')
+
+
+@login_required
+def notification_clear_all(request):
+    """Delete all read notifications."""
+    if request.method == 'POST':
+        Notification.objects.filter(user=request.user, is_read=True).delete()
+        messages.success(request, 'Cleared all read notifications.')
+    return redirect('finance:notification_list')

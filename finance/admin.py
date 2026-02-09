@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Currency, Category, Transaction, Budget
+from .models import Currency, Category, Transaction, Budget, Notification
 
 
 @admin.register(Currency)
@@ -30,3 +30,11 @@ class BudgetAdmin(admin.ModelAdmin):
     list_display = ('user', 'category', 'limit_amount', 'month', 'created_at')
     list_filter = ('month',)
     search_fields = ('user__username', 'category__name')
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'notification_type', 'is_read', 'created_at', 'message')
+    list_filter = ('notification_type', 'is_read')
+    search_fields = ('user__username', 'message')
+    readonly_fields = ('created_at',)

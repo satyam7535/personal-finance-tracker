@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications — Finance Tracker{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h2 style="margin: 0;">Notifications</h2>
+    {% if notifications %}
+    <form method="post" action="{% url 'finance:notification_clear_all' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-secondary btn-sm">Clear Read</button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="card">
+    {% if notifications %}
+    <div style="display: flex; flex-direction: column; gap: 0;">
+        {% for notif in notifications %}
+        <div style="padding: 1rem; border-bottom: 1px solid #eee; display: flex; align-items: flex-start; gap: 1rem;
+            {% if not notif.is_read %}background: #f0f7ff;{% endif %}">
+            <div style="flex-shrink: 0; margin-top: 2px;">
+                {% if notif.notification_type == 'BUDGET_OVERRUN' %}
+                <span
+                    style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #e74c3c;"></span>
+                {% else %}
+                <span
+                    style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #f39c12;"></span>
+                {% endif %}
+            </div>
+            <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+                    <span style="font-weight: 600; font-size: 0.85rem;
+                        {% if notif.notification_type == 'BUDGET_OVERRUN' %}color: #e74c3c;
+                        {% else %}color: #f39c12;{% endif %}">
+                        {{ notif.get_notification_type_display }}
+                    </span>
+                    <span style="font-size: 0.8rem; color: #999;">{{ notif.created_at|timesince }} ago</span>
+                </div>
+                <p style="margin: 0; font-size: 0.9rem; color: #444;">{{ notif.message }}</p>
+                {% if notif.budget %}
+                <a href="{% url 'finance:budget_list' %}"
+                    style="font-size: 0.8rem; color: #3498db; text-decoration: none; margin-top: 0.3rem; display: inline-block;">View
+                    Budget →</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="text-align: center; color: #888; padding: 2rem;">
+        No notifications. You're all caught up!
+    </p>
+    {% endif %}
+</div>
+{% endblock %}

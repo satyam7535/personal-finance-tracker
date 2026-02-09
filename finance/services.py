@@ -8,7 +8,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.shortcuts import get_object_or_404
 
-from .models import Transaction, Category, Budget
+from .models import Transaction, Category, Budget, Notification
 
 
 def create_transaction(user, cleaned_data):
@@ -104,9 +104,14 @@ def get_user_transactions(user, filters=None):
 
 def _check_budget_overrun(user, transaction):
     """
-    After an expense transaction, check if it causes a budget overrun.
-    If so, flag the budget for notification (handled elsewhere).
+    After an expense transaction, check if it causes a budget overrun
+    or nears the limit (80%+). Creates in-app notifications and sends
+    email alerts (one per breach, tracked via last_notified_at).
     """
+    from django.utils import timezone
+    from django.core.mail import send_mail
+    from django.conf import settings
+
     budgets = Budget.objects.filter(
         user=user,
         category=transaction.category,
@@ -114,6 +119,62 @@ def _check_budget_overrun(user, transaction):
         month__month=transaction.date.month,
     )
     for budget in budgets:
+        pct = budget.percentage_used
+
         if budget.is_overrun:
-            # Mark for notification — actual email sending in Phase 11
-            budget.save(update_fields=['updated_at'])
+            ntype = 'BUDGET_OVERRUN'
+            msg = (
+                f'Budget overrun! You have spent {budget.currency_symbol}'
+                f'{budget.spent} of your {budget.currency_symbol}'
+                f'{budget.limit_amount} budget for "{budget.category.name}" '
+                f'in {budget.month.strftime("%B %Y")} ({pct}% used).'
+            )
+        elif pct >= 80:
+            ntype = 'BUDGET_WARNING'
+            msg = (
+                f'Budget warning: You have used {pct}% of your '
+                f'"{budget.category.name}" budget for '
+                f'{budget.month.strftime("%B %Y")}.'
+            )
+        else:
+            continue
+
+        # Avoid duplicate notifications for the same budget+type
+        # But allow escalation: if a WARNING exists and now it's OVERRUN, create it
+        existing = Notification.objects.filter(
+            user=user,
+            budget=budget,
+            notification_type=ntype,
+        ).exists()
+        if existing:
+            # Update the latest notification message with fresh numbers
+            Notification.objects.filter(
+                user=user,
+                budget=budget,
+                notification_type=ntype,
+            ).order_by('-created_at').update(message=msg, is_read=False)
+            continue
+
+        # Create in-app notification
+        Notification.objects.create(
+            user=user,
+            budget=budget,
+            message=msg,
+            notification_type=ntype,
+        )
+
+        # Send email alert
+        if user.email:
+            try:
+                send_mail(
+                    subject=f'[Finance Tracker] {budget.category.name} — {ntype.replace("_", " ").title()}',
+                    message=msg,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=True,
+                )
+            except Exception:
+                pass  # Email failure should never block transactions
+
+            budget.last_notified_at = timezone.now()
+            budget.save(update_fields=['last_notified_at'])

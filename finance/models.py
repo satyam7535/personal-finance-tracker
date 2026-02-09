@@ -288,3 +288,43 @@ class Budget(models.Model):
     def is_overrun(self):
         """Whether spending has exceeded the budget."""
         return self.spent > self.limit_amount
+
+    @property
+    def currency_symbol(self):
+        """Return the user's preferred currency symbol for display."""
+        from finance.currency_utils import get_user_preferred_currency
+        return get_user_preferred_currency(self.user).symbol
+
+
+class Notification(models.Model):
+    """
+    In-app notifications for budget overruns and other alerts.
+    One notification per budget breach (tracked via budget FK + unique logic).
+    """
+    TYPE_CHOICES = [
+        ('BUDGET_WARNING', 'Budget Warning (80%+)'),
+        ('BUDGET_OVERRUN', 'Budget Overrun'),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    budget = models.ForeignKey(
+        'Budget', on_delete=models.CASCADE,
+        related_name='notifications',
+        null=True, blank=True,
+    )
+    message = models.TextField()
+    notification_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_read']),
+        ]
+
+    def __str__(self):
+        return f"[{self.get_notification_type_display()}] {self.message[:50]}"
