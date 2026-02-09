@@ -77,12 +77,18 @@ def monthly_report_view(request):
     income_cats = [c['category'] for c in report['income_breakdown']]
     income_vals = [float(c['total']) for c in report['income_breakdown']]
 
-    # Year/month options for the selector
-    year_choices = list(range(today.year - 3, today.year + 1))
+    # Year/month options for the selector — pre-mark selected for template
+    year_choices = [
+        {'value': y, 'label': y, 'selected': 'selected' if y == year else ''}
+        for y in range(today.year - 3, today.year + 1)
+    ]
+    month_names = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December',
+    ]
     month_choices = [
-        (1, 'January'), (2, 'February'), (3, 'March'), (4, 'April'),
-        (5, 'May'), (6, 'June'), (7, 'July'), (8, 'August'),
-        (9, 'September'), (10, 'October'), (11, 'November'), (12, 'December'),
+        {'value': i + 1, 'label': name, 'selected': 'selected' if i + 1 == month else ''}
+        for i, name in enumerate(month_names)
     ]
 
     context = {

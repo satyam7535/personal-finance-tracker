@@ -20,6 +20,7 @@ class TransactionForm(forms.ModelForm):
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         if user:
+            self.instance.user = user
             self.fields['category'].queryset = Category.objects.filter(user=user)
         self.fields['currency'].queryset = Currency.objects.filter(is_active=True)
 
@@ -76,11 +77,14 @@ class BudgetForm(forms.ModelForm):
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         if user:
+            self.instance.user = user
             # Only expense categories can have budgets
             self.fields['category'].queryset = Category.objects.filter(
                 user=user, type='EXPENSE'
             )
         self.fields['category'].empty_label = '— Select Expense Category —'
+        # Accept "YYYY-MM" from <input type="month"> as well as "YYYY-MM-DD"
+        self.fields['month'].input_formats = ['%Y-%m', '%Y-%m-%d']
 
     def clean_month(self):
         """Normalize month to first day."""

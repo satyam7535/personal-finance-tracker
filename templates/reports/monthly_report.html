@@ -11,8 +11,8 @@
         <div class="form-group" style="margin-bottom: 0;">
             <label for="month">Month</label>
             <select name="month" id="month">
-                {% for num, name in month_choices %}
-                <option value="{{ num }}" {% if num==selected_month %}selected{% endif %}>{{ name }}</option>
+                {% for m in month_choices %}
+                <option value="{{ m.value }}" {{ m.selected }}>{{ m.label }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -20,7 +20,7 @@
             <label for="year">Year</label>
             <select name="year" id="year">
                 {% for y in year_choices %}
-                <option value="{{ y }}" {% if y==selected_year %}selected{% endif %}>{{ y }}</option>
+                <option value="{{ y.value }}" {{ y.selected }}>{{ y.label }}</option>
                 {% endfor %}
             </select>
         </div>
