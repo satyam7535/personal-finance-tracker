@@ -1,10 +1,254 @@
 {% extends 'base.html' %}
 
-{% block title %}Monthly Report — Finance Tracker{% endblock %}
+{% block title %}{{ report.month_name }} Report — Finance Tracker{% endblock %}
 
 {% block content %}
-<div class="card">
-    <h2>Monthly Report</h2>
-    <p>Reports will be generated here once transactions are added.</p>
+<h2 style="margin-bottom: 1.5rem;">Monthly Report</h2>
+
+<!-- ─── Month Selector ─────────────────────────────────────────── -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <form method="get" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label for="month">Month</label>
+            <select name="month" id="month">
+                {% for num, name in month_choices %}
+                <option value="{{ num }}" {% if num==selected_month %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label for="year">Year</label>
+            <select name="year" id="year">
+                {% for y in year_choices %}
+                <option value="{{ y }}" {% if y==selected_year %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Generate</button>
+    </form>
 </div>
+
+<!-- ─── Summary ────────────────────────────────────────────────── -->
+<h3 style="margin-bottom: 1rem;">{{ report.month_name }} <small style="font-size: 0.7em; color: #888;">({{
+        report.currency.code }})</small></h3>
+
+<div class="grid grid-4" style="margin-bottom: 1.5rem;">
+    <div class="card stat-card income">
+        <div class="stat-value">{{ report.currency.symbol }}{{ report.income }}</div>
+        <div class="stat-label">Income</div>
+    </div>
+    <div class="card stat-card expense">
+        <div class="stat-value">{{ report.currency.symbol }}{{ report.expense }}</div>
+        <div class="stat-label">Expenses</div>
+    </div>
+    <div class="card stat-card investment">
+        <div class="stat-value">{{ report.currency.symbol }}{{ report.investment }}</div>
+        <div class="stat-label">Investments</div>
+    </div>
+    <div class="card stat-card savings">
+        <div class="stat-value">{{ report.currency.symbol }}{{ report.savings }}</div>
+        <div class="stat-label">Net Savings</div>
+    </div>
+</div>
+
+<!-- ─── Charts ─────────────────────────────────────────────────── -->
+<div class="grid grid-2" style="margin-bottom: 1.5rem;">
+    <div class="card">
+        <h2>Expense Breakdown</h2>
+        {% if report.expense_breakdown %}
+        <canvas id="expenseChart" height="220"></canvas>
+        {% else %}
+        <p style="text-align:center; color:#888; padding:2rem;">No expenses recorded.</p>
+        {% endif %}
+    </div>
+    <div class="card">
+        <h2>Income Breakdown</h2>
+        {% if report.income_breakdown %}
+        <canvas id="incomeChart" height="220"></canvas>
+        {% else %}
+        <p style="text-align:center; color:#888; padding:2rem;">No income recorded.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ─── Category Tables ────────────────────────────────────────── -->
+<div class="grid grid-2">
+    <!-- Expense Table -->
+    <div class="card">
+        <h2>Expenses by Category</h2>
+        {% if report.expense_breakdown %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in report.expense_breakdown %}
+                <tr>
+                    <td>{{ c.category }}</td>
+                    <td style="font-weight:600; color:#e74c3c;">{{ report.currency.symbol }}{{ c.total }}</td>
+                </tr>
+                {% endfor %}
+                <tr style="font-weight:700; border-top:2px solid #ddd;">
+                    <td>Total</td>
+                    <td style="color:#e74c3c;">{{ report.currency.symbol }}{{ report.expense }}</td>
+                </tr>
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color:#888; padding:1rem; text-align:center;">—</p>
+        {% endif %}
+    </div>
+
+    <!-- Income Table -->
+    <div class="card">
+        <h2>Income by Category</h2>
+        {% if report.income_breakdown %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in report.income_breakdown %}
+                <tr>
+                    <td>{{ c.category }}</td>
+                    <td style="font-weight:600; color:#27ae60;">{{ report.currency.symbol }}{{ c.total }}</td>
+                </tr>
+                {% endfor %}
+                <tr style="font-weight:700; border-top:2px solid #ddd;">
+                    <td>Total</td>
+                    <td style="color:#27ae60;">{{ report.currency.symbol }}{{ report.income }}</td>
+                </tr>
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color:#888; padding:1rem; text-align:center;">—</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ─── Investment Table ───────────────────────────────────────── -->
+{% if report.investment_breakdown %}
+<div class="card">
+    <h2>Investments by Category</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in report.investment_breakdown %}
+            <tr>
+                <td>{{ c.category }}</td>
+                <td style="font-weight:600; color:#f39c12;">{{ report.currency.symbol }}{{ c.total }}</td>
+            </tr>
+            {% endfor %}
+            <tr style="font-weight:700; border-top:2px solid #ddd;">
+                <td>Total</td>
+                <td style="color:#f39c12;">{{ report.currency.symbol }}{{ report.investment }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- ─── Budget Status ──────────────────────────────────────────── -->
+{% if report.budget_status %}
+<div class="card">
+    <h2>Budget Status</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Limit ({{ report.currency.symbol }})</th>
+                <th>Spent ({{ report.currency.symbol }})</th>
+                <th>Progress</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in report.budget_status %}
+            <tr>
+                <td>{{ b.category }}</td>
+                <td>{{ report.currency.symbol }}{{ b.limit }}</td>
+                <td>{{ report.currency.symbol }}{{ b.spent }}</td>
+                <td style="min-width:120px;">
+                    <div style="background:#eee;border-radius:4px;height:18px;overflow:hidden;">
+                        <div
+                            style="height:100%;width:{% if b.percentage > 100 %}100{% else %}{{ b.percentage }}{% endif %}%;background:{% if b.is_overrun %}#e74c3c{% elif b.percentage > 80 %}#f39c12{% else %}#27ae60{% endif %};border-radius:4px;">
+                        </div>
+                    </div>
+                    <small style="color:#888;">{{ b.percentage }}%</small>
+                </td>
+                <td>
+                    {% if b.is_overrun %}
+                    <span
+                        style="padding:0.2rem 0.5rem;border-radius:3px;font-size:0.8rem;font-weight:600;background:#f8d7da;color:#721c24;">OVERRUN</span>
+                    {% elif b.percentage > 80 %}
+                    <span
+                        style="padding:0.2rem 0.5rem;border-radius:3px;font-size:0.8rem;font-weight:600;background:#fff3cd;color:#856404;">WARNING</span>
+                    {% else %}
+                    <span
+                        style="padding:0.2rem 0.5rem;border-radius:3px;font-size:0.8rem;font-weight:600;background:#d4edda;color:#155724;">OK</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+    const palette = [
+        '#e74c3c', '#3498db', '#f39c12', '#9b59b6', '#1abc9c',
+        '#e67e22', '#2ecc71', '#34495e', '#e91e63', '#00bcd4'
+    ];
+
+    // ─── Expense Pie ──────────────────────────────────────────────
+    const expCtx = document.getElementById('expenseChart');
+    if (expCtx) {
+        const cats = {{ expense_cats_json| safe
+    }};
+    const vals = {{ expense_vals_json| safe }};
+    if (cats.length > 0) {
+        new Chart(expCtx, {
+            type: 'pie',
+            data: {
+                labels: cats,
+                datasets: [{ data: vals, backgroundColor: palette.slice(0, cats.length), borderWidth: 2, borderColor: '#fff' }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
+        });
+    }
+}
+
+    // ─── Income Pie ───────────────────────────────────────────────
+    const incCtx = document.getElementById('incomeChart');
+    if (incCtx) {
+        const cats2 = {{ income_cats_json| safe
+    }};
+    const vals2 = {{ income_vals_json| safe }};
+    if (cats2.length > 0) {
+        new Chart(incCtx, {
+            type: 'pie',
+            data: {
+                labels: cats2,
+                datasets: [{ data: vals2, backgroundColor: palette.slice(0, cats2.length), borderWidth: 2, borderColor: '#fff' }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
+        });
+    }
+}
+</script>
 {% endblock %}

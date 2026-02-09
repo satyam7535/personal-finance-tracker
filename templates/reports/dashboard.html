@@ -3,8 +3,206 @@
 {% block title %}Dashboard — Finance Tracker{% endblock %}
 
 {% block content %}
-<div class="card">
-    <h2>Dashboard</h2>
-    <p>Your financial overview will appear here once transactions are added.</p>
+<h2 style="margin-bottom: 1.5rem;">Dashboard <small style="font-size: 0.6em; color: #888;">({{ currency.code }})</small>
+</h2>
+
+<!-- ─── Stat Cards ─────────────────────────────────────────────── -->
+<div class="grid grid-4" style="margin-bottom: 1.5rem;">
+    <div class="card stat-card income">
+        <div class="stat-value">{{ currency.symbol }}{{ income }}</div>
+        <div class="stat-label">Income (this month)</div>
+    </div>
+    <div class="card stat-card expense">
+        <div class="stat-value">{{ currency.symbol }}{{ expense }}</div>
+        <div class="stat-label">Expenses (this month)</div>
+    </div>
+    <div class="card stat-card investment">
+        <div class="stat-value">{{ currency.symbol }}{{ investment }}</div>
+        <div class="stat-label">Investments (this month)</div>
+    </div>
+    <div class="card stat-card savings">
+        <div class="stat-value">{{ currency.symbol }}{{ savings }}</div>
+        <div class="stat-label">Net Savings</div>
+    </div>
 </div>
+
+<!-- ─── Charts Row ─────────────────────────────────────────────── -->
+<div class="grid grid-2">
+    <!-- Trend Chart -->
+    <div class="card">
+        <h2>Income vs Expenses (6 months)</h2>
+        <canvas id="trendChart" height="220"></canvas>
+    </div>
+
+    <!-- Expense Breakdown -->
+    <div class="card">
+        <h2>Expense Breakdown</h2>
+        {% if expense_breakdown %}
+        <canvas id="expenseChart" height="220"></canvas>
+        {% else %}
+        <p style="text-align:center; color:#888; padding:2rem;">No expense data yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ─── Insights ───────────────────────────────────────────────── -->
+{% if insights %}
+<div class="card" style="margin-top: 0;">
+    <h2>Insights</h2>
+    <ul style="list-style: none; padding: 0;">
+        {% for tip in insights %}
+        <li style="padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.95rem;">
+            💡 {{ tip }}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- ─── Budget Alerts + Recent Transactions ────────────────────── -->
+<div class="grid grid-2">
+    <!-- Budget Alerts -->
+    <div class="card">
+        <h2>Budget Alerts</h2>
+        {% if budget_alerts %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Spent / Limit</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in budget_alerts %}
+                <tr>
+                    <td>{{ a.category }}</td>
+                    <td>{{ currency.symbol }}{{ a.spent }} / {{ currency.symbol }}{{ a.limit }}</td>
+                    <td>
+                        {% if a.is_overrun %}
+                        <span
+                            style="padding:0.2rem 0.5rem;border-radius:3px;font-size:0.8rem;font-weight:600;background:#f8d7da;color:#721c24;">OVERRUN</span>
+                        {% else %}
+                        <span
+                            style="padding:0.2rem 0.5rem;border-radius:3px;font-size:0.8rem;font-weight:600;background:#fff3cd;color:#856404;">{{
+                            a.percentage }}%</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="text-align:center; color:#888; padding:1rem;">All budgets on track! 🎉</p>
+        {% endif %}
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="card">
+        <h2>Recent Transactions</h2>
+        {% if recent_transactions %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tx in recent_transactions %}
+                <tr>
+                    <td>{{ tx.date|date:"M d" }}</td>
+                    <td>{{ tx.category.name }}</td>
+                    <td style="font-weight:600;
+                        {% if tx.type == 'INCOME' %}color:#27ae60;
+                        {% elif tx.type == 'EXPENSE' %}color:#e74c3c;
+                        {% else %}color:#f39c12;{% endif %}">
+                        {{ tx.currency.symbol }}{{ tx.amount }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div style="text-align:right; margin-top:0.5rem;">
+            <a href="{% url 'finance:transaction_list' %}" class="btn btn-secondary btn-sm">View All →</a>
+        </div>
+        {% else %}
+        <p style="text-align:center; color:#888; padding:1rem;">
+            No transactions yet. <a href="{% url 'finance:transaction_create' %}">Add one</a>.
+        </p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+    // ─── Trend Chart (Bar) ────────────────────────────────────────
+    const trendCtx = document.getElementById('trendChart');
+    if (trendCtx) {
+        new Chart(trendCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ trend_labels_json| safe }},
+    datasets: [
+        {
+            label: 'Income',
+            data: {{ trend_income_json| safe }},
+        backgroundColor: 'rgba(39, 174, 96, 0.7)',
+        borderColor: '#27ae60',
+        borderWidth: 1,
+        borderRadius: 4,
+                },
+        {
+            label: 'Expenses',
+            data: {{ trend_expense_json| safe }},
+        backgroundColor: 'rgba(231, 76, 60, 0.7)',
+        borderColor: '#e74c3c',
+        borderWidth: 1,
+        borderRadius: 4,
+                }
+    ]
+        },
+    options: {
+        responsive: true,
+            plugins: { legend: { position: 'bottom' } },
+        scales: {
+            y: { beginAtZero: true, ticks: { callback: v => '{{ currency.symbol }}' + v } }
+        }
+    }
+    });
+}
+
+    // ─── Expense Doughnut ─────────────────────────────────────────
+    const expCtx = document.getElementById('expenseChart');
+    if (expCtx) {
+        const cats = {{ expense_cats_json| safe
+    }};
+    const vals = {{ expense_vals_json| safe }};
+    if (cats.length > 0) {
+        const palette = [
+            '#e74c3c', '#3498db', '#f39c12', '#9b59b6', '#1abc9c',
+            '#e67e22', '#2ecc71', '#34495e', '#e91e63', '#00bcd4'
+        ];
+        new Chart(expCtx, {
+            type: 'doughnut',
+            data: {
+                labels: cats,
+                datasets: [{
+                    data: vals,
+                    backgroundColor: palette.slice(0, cats.length),
+                    borderWidth: 2,
+                    borderColor: '#fff',
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+            }
+        });
+    }
+}
+</script>
 {% endblock %}
