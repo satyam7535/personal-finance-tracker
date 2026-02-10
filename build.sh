@@ -9,3 +9,6 @@ python manage.py seed_currencies
 
 python manage.py collectstatic --no-input
 python manage.py migrate
+
+# Configure Site domain for Google OAuth
+python manage.py configure_site
