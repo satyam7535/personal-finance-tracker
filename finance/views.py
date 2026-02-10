@@ -349,9 +349,9 @@ def notification_clear_all(request):
 
 @login_required
 def import_statement(request):
-    """Upload and import a bank statement CSV."""
+    """Upload and import a bank statement CSV or PDF."""
     from .import_forms import BankStatementForm
-    from .import_service import parse_csv_statement, import_transactions
+    from .import_service import parse_csv_statement, parse_pdf_statement, import_transactions
 
     if request.method == 'POST':
         # Step 3: Confirm import
@@ -391,12 +391,25 @@ def import_statement(request):
         # Step 2: Upload & parse
         form = BankStatementForm(request.POST, request.FILES)
         if form.is_valid():
-            parsed = parse_csv_statement(
-                form.cleaned_data['file'],
-                request.user,
-                currency_code=form.cleaned_data['currency'].code,
-                date_format=form.cleaned_data['date_format'],
-            )
+            uploaded_file = form.cleaned_data['file']
+            currency_code = form.cleaned_data['currency'].code
+            date_format = form.cleaned_data['date_format']
+
+            # Route to CSV or PDF parser based on file extension
+            if uploaded_file.name.lower().endswith('.pdf'):
+                parsed = parse_pdf_statement(
+                    uploaded_file,
+                    request.user,
+                    currency_code=currency_code,
+                    date_format=date_format,
+                )
+            else:
+                parsed = parse_csv_statement(
+                    uploaded_file,
+                    request.user,
+                    currency_code=currency_code,
+                    date_format=date_format,
+                )
 
             # Store parsed data in session for confirmation
             import uuid
@@ -414,7 +427,7 @@ def import_statement(request):
                         'category_id': r['category'].pk if r['category'] else None,
                         'category_name': r['category_name'],
                         'is_duplicate': r['is_duplicate'],
-                        'is_uncategorized': r['is_uncategorized'],
+                        'is_uncategorized': r.get('is_uncategorized', False),
                     }
                     for r in parsed['rows']
                 ],
@@ -438,3 +451,26 @@ def import_statement(request):
         'step': 'upload',
         'form': form,
     })
+
+
+@login_required
+def download_sample_csv(request):
+    """Serve a sample CSV file for bank statement import."""
+    from django.http import HttpResponse
+
+    content = (
+        'date,description,amount\n'
+        '2026-01-15,Grocery Store - Weekly Shopping,45.99\n'
+        '2026-01-16,Salary Deposit,5000.00\n'
+        '2026-01-17,Netflix Subscription,15.99\n'
+        '2026-01-18,Uber Ride to Airport,28.50\n'
+        '2026-01-19,Freelance Payment Received,1200.00\n'
+        '2026-01-20,Amazon Shopping,89.99\n'
+        '2026-01-21,Electric Bill Payment,120.00\n'
+        '2026-01-22,Coffee Shop,4.50\n'
+        '2026-01-23,Gym Membership,35.00\n'
+        '2026-01-24,Restaurant Dinner,62.00\n'
+    )
+    response = HttpResponse(content, content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="sample_bank_statement.csv"'
+    return response

@@ -4,16 +4,16 @@ from .models import Currency
 
 
 class BankStatementForm(forms.Form):
-    """Form for uploading bank statement CSV files."""
+    """Form for uploading bank statement CSV or PDF files."""
     file = forms.FileField(
-        label='CSV File',
-        help_text='Upload a CSV file with columns: date, description, amount (or debit/credit)',
-        widget=forms.ClearableFileInput(attrs={'accept': '.csv'}),
+        label='Bank Statement File',
+        help_text='Upload a CSV or PDF bank statement',
+        widget=forms.ClearableFileInput(attrs={'accept': '.csv,.pdf'}),
     )
     currency = forms.ModelChoiceField(
         queryset=Currency.objects.filter(is_active=True),
         label='Currency',
-        help_text='Currency of the transactions in the CSV',
+        help_text='Currency of the transactions in the file',
     )
     date_format = forms.ChoiceField(
         choices=[
@@ -25,14 +25,15 @@ class BankStatementForm(forms.Form):
         ],
         initial='%Y-%m-%d',
         label='Date Format',
-        help_text='Select the date format used in your CSV',
+        help_text='Select the date format used in your file',
     )
 
     def clean_file(self):
         f = self.cleaned_data.get('file')
         if f:
-            if not f.name.endswith('.csv'):
-                raise forms.ValidationError('Only CSV files are allowed.')
+            name_lower = f.name.lower()
+            if not (name_lower.endswith('.csv') or name_lower.endswith('.pdf')):
+                raise forms.ValidationError('Only CSV and PDF files are allowed.')
             if f.size > 10 * 1024 * 1024:  # 10MB limit
                 raise forms.ValidationError('File size must be under 10 MB.')
         return f

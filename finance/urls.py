@@ -29,4 +29,5 @@ urlpatterns = [
 
     # Bank Statement Import
     path('import/', views.import_statement, name='import_statement'),
+    path('import/sample-csv/', views.download_sample_csv, name='download_sample_csv'),
 ]
