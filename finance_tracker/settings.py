@@ -5,6 +5,7 @@ Django settings for finance_tracker project.
 import os
 from pathlib import Path
 from decouple import config, Csv
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -71,15 +72,20 @@ TEMPLATES = [
 WSGI_APPLICATION = 'finance_tracker.wsgi.application'
 
 # ─── Database ────────────────────────────────────────────────────────────────
+# Construct local DB URL from individual env vars if available (fallback for local dev)
+local_db_name = config('DB_NAME', default='finance_tracker')
+local_db_user = config('DB_USER', default='postgres')
+local_db_password = config('DB_PASSWORD', default='postgres')
+local_db_host = config('DB_HOST', default='localhost')
+local_db_port = config('DB_PORT', default='5432')
+local_db_url = f"postgres://{local_db_user}:{local_db_password}@{local_db_host}:{local_db_port}/{local_db_name}"
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='finance_tracker'),
-        'USER': config('DB_USER', default='postgres'),
-        'PASSWORD': config('DB_PASSWORD', default='postgres'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),
-    }
+    'default': dj_database_url.config(
+        default=config('DATABASE_URL', default=local_db_url),
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 # ─── Password validation ────────────────────────────────────────────────────
