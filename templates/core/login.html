@@ -29,6 +29,8 @@
             <hr style="position:absolute; top:50%; left:0; right:0; border:none; border-top:1px solid #ddd; margin:0;">
         </div>
 
+        {% get_providers as socialaccount_providers %}
+        {% if socialaccount_providers %}
         <a href="{% provider_login_url 'google' %}" class="btn btn-secondary"
             style="width:100%; display:flex; align-items:center; justify-content:center; gap:0.5rem;">
             <svg width="18" height="18" viewBox="0 0 48 48">
@@ -43,6 +45,7 @@
             </svg>
             Sign in with Google
         </a>
+        {% endif %}
 
         <p style="text-align:center; margin-top:1rem; font-size:0.9rem;">
             Don't have an account? <a href="{% url 'core:register' %}">Register</a>
