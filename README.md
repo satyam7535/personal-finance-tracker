@@ -1,6 +1,6 @@
 # 💰 Personal Finance Tracker
 
-A **production-grade, AI-assisted** personal finance tracking application built with **Django **, **PostgreSQL**, and **Google Gemini** / **OpenAI**.
+A **production-grade, AI-assisted** personal finance tracking application built with Django , **PostgreSQL**, and **Google Gemini** / **OpenAI**.
 
 The system prioritizes **clarity**, **explainability**, **robustness**, and **graceful failure handling** — no opaque automation, no brittle single-points-of-failure.
 
