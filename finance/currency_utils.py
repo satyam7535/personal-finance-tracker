@@ -72,6 +72,7 @@ def get_user_preferred_currency(user):
     """
     Resolve the user's preferred currency to a Currency model instance.
     Falls back to USD if the preference is invalid.
+    Creates USD currency if it doesn't exist (critical for bootstrapping).
     """
     preferred_code = getattr(user, 'profile', None)
     if preferred_code:
@@ -81,7 +82,21 @@ def get_user_preferred_currency(user):
 
     currency = get_currency(preferred_code)
     if currency is None:
-        currency = Currency.objects.filter(code='USD').first()
+        # Try to get USD as fallback
+        currency = Currency.objects.filter(code='USD', is_active=True).first()
+       
+    # If USD doesn't exist, create it now (bootstrap scenario)
+    if currency is None:
+        currency, created = Currency.objects.get_or_create(
+            code='USD',
+            defaults={
+                'name': 'US Dollar',
+                'symbol': '$',
+                'exchange_rate_to_usd': Decimal('1.000000'),
+                'is_active': True,
+            }
+        )
+   
     return currency
 
 
