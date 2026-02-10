@@ -5,134 +5,69 @@
 {% block content %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
     <h2>🔍 Multi-Signal Anomaly Detection</h2>
-    <span style="color:#777; font-size:0.9rem;">Fraud & spending analysis in {{ preferred_currency.code }}</span>
+    <span style="color:#777; font-size:0.9rem;">Fraud &amp; spending analysis in {{ preferred_currency.code }}</span>
 </div>
 
-<!-- Detection Summary -->
 {% if total_flagged > 0 %}
-<div
-    style="background:#fff3cd; border:1px solid #ffc107; border-radius:8px; padding:1rem 1.5rem; margin-bottom:1.5rem;">
+<div style="background:#fff3cd; border:1px solid #ffc107; border-radius:8px; padding:1rem 1.5rem; margin-bottom:1.5rem;">
     <strong>⚠️ {{ total_flagged }} suspicious transaction{{ total_flagged|pluralize }} flagged</strong>
-    <p style="margin:0.3rem 0 0; color:#856404; font-size:0.9rem;">
-        Five detection signals analysed: Z-Score, IQR outlier, round-number pattern, frequency spike &amp; velocity
-        clustering.
-    </p>
+    <p style="margin:0.3rem 0 0; color:#856404; font-size:0.9rem;">Five detection signals analysed: Z-Score, IQR outlier, round-number pattern, frequency spike &amp; velocity clustering.</p>
 </div>
-
-<!-- Signal Breakdown -->
 <div style="display:flex; flex-wrap:wrap; gap:0.75rem; margin-bottom:1.5rem;">
-    <div
-        style="background:#f8f9fa; border:1px solid #dee2e6; border-radius:6px; padding:0.6rem 1rem; flex:1; min-width:140px; text-align:center;">
+    <div style="background:#f8f9fa; border:1px solid #dee2e6; border-radius:6px; padding:0.6rem 1rem; flex:1; min-width:140px; text-align:center;">
         <div style="font-size:1.4rem; font-weight:700; color:#e74c3c;">{{ detection_summary.zscore }}</div>
         <div style="font-size:0.75rem; color:#666;">Z-Score (&gt;2σ)</div>
     </div>
-    <div
-        style="background:#f8f9fa; border:1px solid #dee2e6; border-radius:6px; padding:0.6rem 1rem; flex:1; min-width:140px; text-align:center;">
+    <div style="background:#f8f9fa; border:1px solid #dee2e6; border-radius:6px; padding:0.6rem 1rem; flex:1; min-width:140px; text-align:center;">
         <div style="font-size:1.4rem; font-weight:700; color:#e67e22;">{{ detection_summary.iqr }}</div>
         <div style="font-size:0.75rem; color:#666;">IQR Outlier</div>
     </div>
-    <div
-        style="background:#f8f9fa; border:1px solid #dee2e6; border-radius:6px; padding:0.6rem 1rem; flex:1; min-width:140px; text-align:center;">
+    <div style="background:#f8f9fa; border:1px solid #dee2e6; border-radius:6px; padding:0.6rem 1rem; flex:1; min-width:140px; text-align:center;">
         <div style="font-size:1.4rem; font-weight:700; color:#9b59b6;">{{ detection_summary.round_number }}</div>
         <div style="font-size:0.75rem; color:#666;">Round Number</div>
     </div>
-    <div
-        style="background:#f8f9fa; border:1px solid #dee2e6; border-radius:6px; padding:0.6rem 1rem; flex:1; min-width:140px; text-align:center;">
+    <div style="background:#f8f9fa; border:1px solid #dee2e6; border-radius:6px; padding:0.6rem 1rem; flex:1; min-width:140px; text-align:center;">
         <div style="font-size:1.4rem; font-weight:700; color:#2980b9;">{{ detection_summary.frequency }}</div>
         <div style="font-size:0.75rem; color:#666;">Frequency Spike</div>
     </div>
-    <div
-        style="background:#f8f9fa; border:1px solid #dee2e6; border-radius:6px; padding:0.6rem 1rem; flex:1; min-width:140px; text-align:center;">
+    <div style="background:#f8f9fa; border:1px solid #dee2e6; border-radius:6px; padding:0.6rem 1rem; flex:1; min-width:140px; text-align:center;">
         <div style="font-size:1.4rem; font-weight:700; color:#16a085;">{{ detection_summary.velocity }}</div>
         <div style="font-size:0.75rem; color:#666;">Velocity</div>
     </div>
 </div>
 {% else %}
-<div
-    style="background:#d4edda; border:1px solid #28a745; border-radius:8px; padding:1rem 1.5rem; margin-bottom:1.5rem;">
+<div style="background:#d4edda; border:1px solid #28a745; border-radius:8px; padding:1rem 1.5rem; margin-bottom:1.5rem;">
     <strong>✅ No anomalies detected</strong>
-    <p style="margin:0.3rem 0 0; color:#155724; font-size:0.9rem;">
-        All transactions passed 5-signal analysis. No suspicious patterns found.
-    </p>
+    <p style="margin:0.3rem 0 0; color:#155724; font-size:0.9rem;">All transactions passed 5-signal analysis. No suspicious patterns found.</p>
 </div>
 {% endif %}
 
-<!-- Flagged Transactions -->
 {% if anomalies %}
 <div class="card" style="margin-bottom:2rem;">
     <h3 style="margin-bottom:1rem; color:#e74c3c;">🚩 Flagged Transactions (by Risk Score)</h3>
     <div style="overflow-x:auto;">
         <table>
             <thead>
-                <tr>
-                    <th>Risk</th>
-                    <th>Date</th>
-                    <th>Category</th>
-                    <th>Description</th>
-                    <th>Amount</th>
-                    <th>Avg</th>
-                    <th>Deviation</th>
-                    <th>Signals</th>
-                </tr>
+                <tr><th>Risk</th><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Avg</th><th>Deviation</th><th>Signals</th></tr>
             </thead>
             <tbody>
                 {% for a in anomalies %}
-                <tr
-                    style="background:{% if a.risk_score >= 60 %}#fde8e8{% elif a.risk_score >= 35 %}#fff5e6{% else %}#fffde6{% endif %};">
+                <tr style="background:{% if a.risk_score >= 60 %}#fde8e8{% elif a.risk_score >= 35 %}#fff5e6{% else %}#fffde6{% endif %};">
                     <td>
-                        {% if a.risk_score >= 60 %}
-                        <span
-                            style="background:#e74c3c; color:#fff; padding:0.2rem 0.6rem; border-radius:4px; font-weight:700; font-size:0.85rem;">{{
-                            a.risk_score }}</span>
-                        {% elif a.risk_score >= 35 %}
-                        <span
-                            style="background:#e67e22; color:#fff; padding:0.2rem 0.6rem; border-radius:4px; font-weight:700; font-size:0.85rem;">{{
-                            a.risk_score }}</span>
-                        {% else %}
-                        <span
-                            style="background:#f1c40f; color:#333; padding:0.2rem 0.6rem; border-radius:4px; font-weight:700; font-size:0.85rem;">{{
-                            a.risk_score }}</span>
-                        {% endif %}
+                        {% if a.risk_score >= 60 %}<span style="background:#e74c3c; color:#fff; padding:0.2rem 0.6rem; border-radius:4px; font-weight:700; font-size:0.85rem;">{{ a.risk_score }}</span>{% elif a.risk_score >= 35 %}<span style="background:#e67e22; color:#fff; padding:0.2rem 0.6rem; border-radius:4px; font-weight:700; font-size:0.85rem;">{{ a.risk_score }}</span>{% else %}<span style="background:#f1c40f; color:#333; padding:0.2rem 0.6rem; border-radius:4px; font-weight:700; font-size:0.85rem;">{{ a.risk_score }}</span>{% endif %}
                     </td>
                     <td>{{ a.tx.date|date:"M d, Y" }}</td>
                     <td>{{ a.category }}</td>
                     <td>{{ a.tx.description|truncatewords:5|default:"—" }}</td>
-                    <td style="font-weight:600; color:#e74c3c;">{{ preferred_currency.symbol }}{{ a.converted_amount }}
-                    </td>
+                    <td style="font-weight:600; color:#e74c3c;">{{ preferred_currency.symbol }}{{ a.converted_amount }}</td>
                     <td style="color:#555;">{{ preferred_currency.symbol }}{{ a.mean }}</td>
-                    <td>
-                        <span
-                            style="background:#e74c3c; color:#fff; padding:0.15rem 0.5rem; border-radius:3px; font-size:0.8rem; font-weight:600;">+{{
-                            a.deviation_pct }}%</span>
-                    </td>
+                    <td><span style="background:#e74c3c; color:#fff; padding:0.15rem 0.5rem; border-radius:3px; font-size:0.8rem; font-weight:600;">+{{ a.deviation_pct }}%</span></td>
                     <td style="font-size:0.8rem;">
-                        {% if a.signals.zscore %}
-                        <span
-                            style="background:#e74c3c; color:#fff; padding:0.1rem 0.4rem; border-radius:3px; margin:0.1rem; display:inline-block;"
-                            title="Z-Score: {{ a.signals.zscore }}σ above mean">Z:{{ a.signals.zscore }}σ</span>
-                        {% endif %}
-                        {% if a.signals.iqr %}
-                        <span
-                            style="background:#e67e22; color:#fff; padding:0.1rem 0.4rem; border-radius:3px; margin:0.1rem; display:inline-block;"
-                            title="Above IQR upper fence (Q3 + 1.5×IQR)">IQR</span>
-                        {% endif %}
-                        {% if a.signals.round_number %}
-                        <span
-                            style="background:#9b59b6; color:#fff; padding:0.1rem 0.4rem; border-radius:3px; margin:0.1rem; display:inline-block;"
-                            title="Suspiciously round amount">Round</span>
-                        {% endif %}
-                        {% if a.signals.frequency %}
-                        <span
-                            style="background:#2980b9; color:#fff; padding:0.1rem 0.4rem; border-radius:3px; margin:0.1rem; display:inline-block;"
-                            title="{{ a.signals.frequency }} transactions on this day (3× above average)">Freq:{{
-                            a.signals.frequency }}</span>
-                        {% endif %}
-                        {% if a.signals.velocity %}
-                        <span
-                            style="background:#16a085; color:#fff; padding:0.1rem 0.4rem; border-radius:3px; margin:0.1rem; display:inline-block;"
-                            title="{{ a.signals.velocity }} other same-category transactions on the same day">Vel:{{
-                            a.signals.velocity }}</span>
-                        {% endif %}
+                        {% if a.signals.zscore %}<span style="background:#e74c3c; color:#fff; padding:0.1rem 0.4rem; border-radius:3px; margin:0.1rem; display:inline-block;">Z:{{ a.signals.zscore }}σ</span>{% endif %}
+                        {% if a.signals.iqr %}<span style="background:#e67e22; color:#fff; padding:0.1rem 0.4rem; border-radius:3px; margin:0.1rem; display:inline-block;">IQR</span>{% endif %}
+                        {% if a.signals.round_number %}<span style="background:#9b59b6; color:#fff; padding:0.1rem 0.4rem; border-radius:3px; margin:0.1rem; display:inline-block;">Round</span>{% endif %}
+                        {% if a.signals.frequency %}<span style="background:#2980b9; color:#fff; padding:0.1rem 0.4rem; border-radius:3px; margin:0.1rem; display:inline-block;">Freq:{{ a.signals.frequency }}</span>{% endif %}
+                        {% if a.signals.velocity %}<span style="background:#16a085; color:#fff; padding:0.1rem 0.4rem; border-radius:3px; margin:0.1rem; display:inline-block;">Vel:{{ a.signals.velocity }}</span>{% endif %}
                     </td>
                 </tr>
                 {% endfor %}
@@ -142,24 +77,13 @@
 </div>
 {% endif %}
 
-<!-- Category Statistics -->
 <div class="card">
     <h3 style="margin-bottom:1rem;">📊 Category Statistics</h3>
-    <p style="color:#777; font-size:0.85rem; margin-bottom:1rem;">
-        Per-category statistical thresholds: Z-Score (mean + 2σ) and IQR (Q3 + 1.5 × IQR).
-    </p>
+    <p style="color:#777; font-size:0.85rem; margin-bottom:1rem;">Per-category statistical thresholds: Z-Score (mean + 2σ) and IQR (Q3 + 1.5 × IQR).</p>
     <div style="overflow-x:auto;">
         <table>
             <thead>
-                <tr>
-                    <th>Category</th>
-                    <th>Count</th>
-                    <th>Mean</th>
-                    <th>Std Dev</th>
-                    <th>Z-Threshold</th>
-                    <th>IQR-Threshold</th>
-                    <th>Status</th>
-                </tr>
+                <tr><th>Category</th><th>Count</th><th>Mean</th><th>Std Dev</th><th>Z-Threshold</th><th>IQR-Threshold</th><th>Status</th></tr>
             </thead>
             <tbody>
                 {% for s in category_stats %}
@@ -168,49 +92,27 @@
                     <td>{{ s.count }}</td>
                     <td>{{ preferred_currency.symbol }}{{ s.mean }}</td>
                     <td>{{ preferred_currency.symbol }}{{ s.std_dev }}</td>
-                    <td>
-                        {% if s.threshold_zscore %}{{ preferred_currency.symbol }}{{ s.threshold_zscore }}{% else %}—{%
-                        endif %}
-                    </td>
-                    <td>
-                        {% if s.threshold_iqr %}{{ preferred_currency.symbol }}{{ s.threshold_iqr }}{% else %}—{% endif
-                        %}
-                    </td>
-                    <td>
-                        {% if s.note %}
-                        <span style="color:#f39c12; font-size:0.85rem;">{{ s.note }}</span>
-                        {% else %}
-                        <span style="color:#27ae60; font-size:0.85rem;">✓ Analyzed</span>
-                        {% endif %}
-                    </td>
+                    <td>{% if s.threshold_zscore %}{{ preferred_currency.symbol }}{{ s.threshold_zscore }}{% else %}—{% endif %}</td>
+                    <td>{% if s.threshold_iqr %}{{ preferred_currency.symbol }}{{ s.threshold_iqr }}{% else %}—{% endif %}</td>
+                    <td>{% if s.note %}<span style="color:#f39c12; font-size:0.85rem;">{{ s.note }}</span>{% else %}<span style="color:#27ae60; font-size:0.85rem;">✓ Analyzed</span>{% endif %}</td>
                 </tr>
-                {% endfor %}
                 {% empty %}
-                <tr>
-                    <td colspan="7" style="text-align:center; padding:2rem; color:#999;">
-                        No expense transactions found. Add some transactions to see anomaly analysis.
-                    </td>
-                </tr>
+                <tr><td colspan="7" style="text-align:center; padding:2rem; color:#999;">No expense transactions found. Add some transactions to see anomaly analysis.</td></tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
 
-<!-- How it works -->
 <div style="margin-top:1.5rem; padding:1rem; background:#f8f9fa; border-radius:8px; font-size:0.85rem; color:#666;">
     <strong>Multi-Signal Detection Engine:</strong>
     <ol style="margin:0.5rem 0 0; padding-left:1.2rem; line-height:1.7;">
         <li><strong>Z-Score</strong> — flags if amount &gt; mean + 2σ (statistical outlier in category)</li>
         <li><strong>IQR Outlier</strong> — flags if amount &gt; Q3 + 1.5 × IQR (robust, resists skewed data)</li>
-        <li><strong>Round Number</strong> — flags suspiciously round amounts (₹500, ₹1000, etc. — common fraud pattern)
-        </li>
+        <li><strong>Round Number</strong> — flags suspiciously round amounts (₹500, ₹1000, etc.)</li>
         <li><strong>Frequency Spike</strong> — flags if the day has 3× more transactions than the daily average</li>
         <li><strong>Velocity</strong> — flags 2+ same-category transactions on the same day</li>
     </ol>
-    <p style="margin:0.5rem 0 0;">
-        Each transaction receives a <strong>composite risk score (0–100)</strong> based on how many signals it triggers.
-        Higher scores indicate more suspicious activity. At least 3 transactions per category are needed for statistical
-        analysis.
-    </p>
+    <p style="margin:0.5rem 0 0;">Each transaction receives a <strong>composite risk score (0–100)</strong> based on how many signals it triggers. Higher scores indicate more suspicious activity.</p>
 </div>
 {% endblock %}
