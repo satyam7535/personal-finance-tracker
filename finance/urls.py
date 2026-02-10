@@ -26,4 +26,7 @@ urlpatterns = [
     path('notifications/', views.notification_list, name='notification_list'),
     path('notifications/<int:pk>/read/', views.notification_mark_read, name='notification_mark_read'),
     path('notifications/clear/', views.notification_clear_all, name='notification_clear_all'),
+
+    # Bank Statement Import
+    path('import/', views.import_statement, name='import_statement'),
 ]

@@ -345,3 +345,96 @@ def notification_clear_all(request):
         Notification.objects.filter(user=request.user, is_read=True).delete()
         messages.success(request, 'Cleared all read notifications.')
     return redirect('finance:notification_list')
+
+
+@login_required
+def import_statement(request):
+    """Upload and import a bank statement CSV."""
+    from .import_forms import BankStatementForm
+    from .import_service import parse_csv_statement, import_transactions
+
+    if request.method == 'POST':
+        # Step 3: Confirm import
+        if request.POST.get('confirm_import'):
+            session_key = request.POST.get('session_key')
+            parsed_data = request.session.get(session_key)
+            if parsed_data:
+                from .models import Currency
+                currency = Currency.objects.get(pk=parsed_data['currency_id'])
+
+                # Reconstruct row objects with category references
+                from .models import Category
+                rows = []
+                for row in parsed_data['rows']:
+                    cat = None
+                    if row['category_id']:
+                        try:
+                            cat = Category.objects.get(pk=row['category_id'])
+                        except Category.DoesNotExist:
+                            pass
+                    rows.append({
+                        **row,
+                        'category': cat,
+                        'date': __import__('datetime').datetime.strptime(row['date'], '%Y-%m-%d').date(),
+                        'amount': __import__('decimal').Decimal(row['amount']),
+                    })
+
+                result = import_transactions(request.user, rows, currency)
+                del request.session[session_key]
+
+                return render(request, 'finance/import_statement.html', {
+                    'step': 'done',
+                    'imported': result['imported'],
+                    'skipped': result['skipped'],
+                })
+
+        # Step 2: Upload & parse
+        form = BankStatementForm(request.POST, request.FILES)
+        if form.is_valid():
+            parsed = parse_csv_statement(
+                form.cleaned_data['file'],
+                request.user,
+                currency_code=form.cleaned_data['currency'].code,
+                date_format=form.cleaned_data['date_format'],
+            )
+
+            # Store parsed data in session for confirmation
+            import uuid
+            session_key = f'import_{uuid.uuid4().hex[:8]}'
+            session_data = {
+                'currency_id': parsed['currency'].pk,
+                'rows': [
+                    {
+                        'row_num': r['row_num'],
+                        'date': r['date'].isoformat(),
+                        'description': r['description'],
+                        'amount': str(r['amount']),
+                        'original_amount': str(r['original_amount']),
+                        'type': r['type'],
+                        'category_id': r['category'].pk if r['category'] else None,
+                        'category_name': r['category_name'],
+                        'is_duplicate': r['is_duplicate'],
+                        'is_uncategorized': r['is_uncategorized'],
+                    }
+                    for r in parsed['rows']
+                ],
+            }
+            request.session[session_key] = session_data
+
+            return render(request, 'finance/import_statement.html', {
+                'step': 'preview',
+                'rows': parsed['rows'],
+                'total_rows': parsed['total_rows'],
+                'new_count': parsed['new_count'],
+                'duplicates': parsed['duplicates'],
+                'errors': parsed['errors'],
+                'currency': parsed['currency'],
+                'session_key': session_key,
+            })
+    else:
+        form = BankStatementForm()
+
+    return render(request, 'finance/import_statement.html', {
+        'step': 'upload',
+        'form': form,
+    })

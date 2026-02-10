@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Import Bank Statement — Finance Tracker{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+    <h2>📄 Import Bank Statement</h2>
+    <a href="{% url 'finance:transaction_list' %}" class="btn" style="background:#6c757d;">← Back to Transactions</a>
+</div>
+
+{% if step == 'upload' %}
+<!-- Upload Form -->
+<div class="card" style="max-width:600px;">
+    <h3 style="margin-bottom:1rem;">Upload CSV File</h3>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% for field in form %}
+        <div style="margin-bottom:1rem;">
+            <label style="display:block; margin-bottom:0.3rem; font-weight:600;">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}
+            <small style="color:#777; display:block; margin-top:0.2rem;">{{ field.help_text }}</small>
+            {% endif %}
+            {% for error in field.errors %}
+            <small style="color:#e74c3c; display:block;">{{ error }}</small>
+            {% endfor %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn">📤 Upload & Preview</button>
+    </form>
+
+    <div style="margin-top:1.5rem; padding:1rem; background:#f8f9fa; border-radius:8px; font-size:0.85rem; color:#666;">
+        <strong>Expected CSV format:</strong>
+        <pre style="margin:0.5rem 0; background:#e9ecef; padding:0.5rem; border-radius:4px; overflow-x:auto;">date,description,amount
+2026-01-15,Grocery Store,45.99
+2026-01-16,Salary Deposit,5000.00
+2026-01-17,Netflix Subscription,15.99</pre>
+        <p style="margin:0.5rem 0 0;">Also supports <code>debit</code>/<code>credit</code> columns instead of
+            <code>amount</code>.</p>
+    </div>
+</div>
+
+{% elif step == 'preview' %}
+<!-- Preview Results -->
+<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+    <div class="card" style="text-align:center; padding:1rem;">
+        <div style="font-size:1.5rem; font-weight:700; color:#3498db;">{{ total_rows }}</div>
+        <div style="font-size:0.85rem; color:#777;">Total Rows</div>
+    </div>
+    <div class="card" style="text-align:center; padding:1rem;">
+        <div style="font-size:1.5rem; font-weight:700; color:#27ae60;">{{ new_count }}</div>
+        <div style="font-size:0.85rem; color:#777;">New Transactions</div>
+    </div>
+    <div class="card" style="text-align:center; padding:1rem;">
+        <div style="font-size:1.5rem; font-weight:700; color:#f39c12;">{{ duplicates }}</div>
+        <div style="font-size:0.85rem; color:#777;">Duplicates (skip)</div>
+    </div>
+    <div class="card" style="text-align:center; padding:1rem;">
+        <div style="font-size:1.5rem; font-weight:700; color:#e74c3c;">{{ errors|length }}</div>
+        <div style="font-size:0.85rem; color:#777;">Errors</div>
+    </div>
+</div>
+
+{% if errors %}
+<div style="background:#f8d7da; border:1px solid #f5c6cb; border-radius:8px; padding:1rem; margin-bottom:1rem;">
+    <strong>Parse Errors:</strong>
+    <ul style="margin:0.5rem 0 0; padding-left:1.5rem;">
+        {% for err in errors %}
+        <li style="font-size:0.85rem;">{{ err }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{% if rows %}
+<div class="card">
+    <h3 style="margin-bottom:1rem;">Preview</h3>
+    <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Type</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr
+                    style="{% if row.is_duplicate %}background:#fff3cd;{% elif row.is_uncategorized %}background:#f8d7da;{% endif %}">
+                    <td>{{ row.row_num }}</td>
+                    <td>{{ row.date|date:"M d, Y" }}</td>
+                    <td>{{ row.description|truncatewords:8|default:"—" }}</td>
+                    <td style="font-weight:600;">{{ currency.symbol }}{{ row.amount }}</td>
+                    <td>
+                        <span style="padding:0.15rem 0.4rem; border-radius:3px; font-size:0.8rem; font-weight:600;
+                            {% if row.type == 'INCOME' %}background:#d4edda; color:#155724;
+                            {% elif row.type == 'EXPENSE' %}background:#f8d7da; color:#721c24;
+                            {% else %}background:#fff3cd; color:#856404;{% endif %}">
+                            {{ row.type }}
+                        </span>
+                    </td>
+                    <td>
+                        {{ row.category_name }}
+                        {% if row.is_uncategorized %}
+                        <span style="color:#e74c3c; font-size:0.75rem;">⚠ No match</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if row.is_duplicate %}
+                        <span style="color:#856404; font-weight:600;">⚠ Duplicate</span>
+                        {% elif row.is_uncategorized %}
+                        <span style="color:#e74c3c; font-weight:600;">✗ Skip</span>
+                        {% else %}
+                        <span style="color:#27ae60; font-weight:600;">✓ Ready</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if new_count > 0 %}
+<form method="post" style="margin-top:1rem;">
+    {% csrf_token %}
+    <input type="hidden" name="confirm_import" value="1">
+    <input type="hidden" name="session_key" value="{{ session_key }}">
+    <div style="display:flex; gap:0.5rem;">
+        <button type="submit" class="btn" style="background:#27ae60;">
+            ✓ Import {{ new_count }} Transaction{{ new_count|pluralize }}
+        </button>
+        <a href="{% url 'finance:import_statement' %}" class="btn" style="background:#6c757d;">Cancel</a>
+    </div>
+</form>
+{% else %}
+<div style="margin-top:1rem; padding:1rem; background:#fff3cd; border-radius:8px;">
+    <strong>No new transactions to import.</strong> All rows are either duplicates or missing valid categories.
+    <br><a href="{% url 'finance:import_statement' %}">Upload a different file</a>
+</div>
+{% endif %}
+{% endif %}
+
+{% elif step == 'done' %}
+<!-- Import Complete -->
+<div class="card" style="text-align:center; padding:3rem;">
+    <div style="font-size:3rem; margin-bottom:1rem;">✅</div>
+    <h3 style="margin-bottom:0.5rem;">Import Complete!</h3>
+    <p style="color:#555; margin-bottom:1.5rem;">
+        Successfully imported <strong>{{ imported }}</strong> transaction{{ imported|pluralize }}.
+        {% if skipped > 0 %}Skipped <strong>{{ skipped }}</strong> duplicate{{ skipped|pluralize }} or uncategorized
+        row{{ skipped|pluralize }}.{% endif %}
+    </p>
+    <div style="display:flex; gap:0.5rem; justify-content:center;">
+        <a href="{% url 'finance:transaction_list' %}" class="btn">View Transactions</a>
+        <a href="{% url 'finance:import_statement' %}" class="btn" style="background:#6c757d;">Import More</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

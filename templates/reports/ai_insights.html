@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}AI Financial Insights — Finance Tracker{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+    <h2>🤖 AI Financial Insights</h2>
+    <span
+        style="padding:0.3rem 0.8rem; border-radius:4px; font-size:0.8rem; font-weight:600; {% if ai_powered %}background:#d4edda; color:#155724;{% else %}background:#cce5ff; color:#004085;{% endif %}">{{
+        provider }}</span>
+</div>
+
+<!-- Financial Summary Card -->
+<div class="card"
+    style="margin-bottom:1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:#fff;">
+    <h3 style="margin-bottom:1rem; color:#fff;">📊 Last 30 Days Summary</h3>
+    <p style="font-size:0.85rem; opacity:0.8; margin-bottom:1rem;">{{ context.period }}</p>
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:1rem;">
+        <div style="background:rgba(255,255,255,0.15); padding:0.8rem; border-radius:8px; text-align:center;">
+            <div style="font-size:0.75rem; opacity:0.8;">Income</div>
+            <div style="font-size:1.2rem; font-weight:700;">{{ context.currency_symbol }}{{ context.income|floatformat:2
+                }}</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.15); padding:0.8rem; border-radius:8px; text-align:center;">
+            <div style="font-size:0.75rem; opacity:0.8;">Expenses</div>
+            <div style="font-size:1.2rem; font-weight:700;">{{ context.currency_symbol }}{{
+                context.expenses|floatformat:2 }}</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.15); padding:0.8rem; border-radius:8px; text-align:center;">
+            <div style="font-size:0.75rem; opacity:0.8;">Investments</div>
+            <div style="font-size:1.2rem; font-weight:700;">{{ context.currency_symbol }}{{
+                context.investments|floatformat:2 }}</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.15); padding:0.8rem; border-radius:8px; text-align:center;">
+            <div style="font-size:0.75rem; opacity:0.8;">Net Savings</div>
+            <div style="font-size:1.2rem; font-weight:700;">{{ context.currency_symbol }}{{
+                context.savings|floatformat:2 }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Insights -->
+<div style="display:grid; gap:1rem;">
+    {% for insight in insights %}
+    <div class="card"
+        style="border-left: 4px solid 
+        {% if insight.type == 'positive' %}#27ae60{% elif insight.type == 'warning' %}#f39c12{% elif insight.type == 'danger' %}#e74c3c{% else %}#3498db{% endif %};">
+        <h4 style="margin-bottom:0.5rem;">{{ insight.title }}</h4>
+        <p style="color:#555; margin:0; line-height:1.6;">{{ insight.body }}</p>
+    </div>
+    {% empty %}
+    <div class="card" style="text-align:center; padding:3rem; color:#999;">
+        <p>No insights available yet. Start adding transactions to get personalized financial advice.</p>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not ai_powered %}
+<div style="margin-top:1.5rem; padding:1rem; background:#f8f9fa; border-radius:8px; font-size:0.85rem; color:#666;">
+    <strong>💡 Tip:</strong> These insights are generated using smart rule-based analysis of your
+    actual financial data. To enable AI-powered insights, add a <code>GEMINI_API_KEY</code>
+    (free) or <code>OPENAI_API_KEY</code> to your environment configuration.
+</div>
+{% endif %}
+{% endblock %}

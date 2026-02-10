@@ -103,3 +103,19 @@ def monthly_report_view(request):
         'income_vals_json': json.dumps(income_vals),
     }
     return render(request, 'reports/monthly_report.html', context)
+
+
+@login_required
+def anomaly_view(request):
+    """Spending anomaly detection page."""
+    from .anomaly import get_anomalies
+    data = get_anomalies(request.user)
+    return render(request, 'reports/anomaly.html', data)
+
+
+@login_required
+def ai_insights_view(request):
+    """AI-powered financial insights page."""
+    from .ai_insights import get_ai_insights
+    data = get_ai_insights(request.user)
+    return render(request, 'reports/ai_insights.html', data)

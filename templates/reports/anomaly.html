@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Anomaly Detection — Finance Tracker{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+    <h2>🔍 Anomaly Detection</h2>
+    <span style="color:#777; font-size:0.9rem;">Spending patterns analysis in {{ preferred_currency.code }}</span>
+</div>
+
+{% if total_flagged > 0 %}
+<div
+    style="background:#fff3cd; border:1px solid #ffc107; border-radius:8px; padding:1rem 1.5rem; margin-bottom:1.5rem;">
+    <strong>⚠️ {{ total_flagged }} unusual transaction{{ total_flagged|pluralize }} detected</strong>
+    <p style="margin:0.3rem 0 0; color:#856404; font-size:0.9rem;">
+        Transactions flagged where spending exceeds 2 standard deviations above the category average.
+    </p>
+</div>
+{% else %}
+<div
+    style="background:#d4edda; border:1px solid #28a745; border-radius:8px; padding:1rem 1.5rem; margin-bottom:1.5rem;">
+    <strong>✅ No anomalies detected</strong>
+    <p style="margin:0.3rem 0 0; color:#155724; font-size:0.9rem;">
+        All your transactions fall within normal spending patterns. Keep it up!
+    </p>
+</div>
+{% endif %}
+
+<!-- Flagged Transactions -->
+{% if anomalies %}
+<div class="card" style="margin-bottom:2rem;">
+    <h3 style="margin-bottom:1rem; color:#e74c3c;">🚩 Flagged Transactions</h3>
+    <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Category Avg</th>
+                    <th>Threshold</th>
+                    <th>Deviation</th>
+                    <th>Z-Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in anomalies %}
+                <tr style="background:#fff5f5;">
+                    <td>{{ a.tx.date|date:"M d, Y" }}</td>
+                    <td>{{ a.category }}</td>
+                    <td>{{ a.tx.description|truncatewords:6|default:"—" }}</td>
+                    <td style="font-weight:600; color:#e74c3c;">{{ preferred_currency.symbol }}{{ a.converted_amount }}
+                    </td>
+                    <td style="color:#555;">{{ preferred_currency.symbol }}{{ a.mean }}</td>
+                    <td style="color:#555;">{{ preferred_currency.symbol }}{{ a.threshold }}</td>
+                    <td><span
+                            style="background:#e74c3c; color:#fff; padding:0.15rem 0.5rem; border-radius:3px; font-size:0.8rem; font-weight:600;">+{{
+                            a.deviation_pct }}%</span></td>
+                    <td style="font-weight:600;">{{ a.z_score }}σ</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Category Statistics -->
+<div class="card">
+    <h3 style="margin-bottom:1rem;">📊 Category Statistics</h3>
+    <p style="color:#777; font-size:0.85rem; margin-bottom:1rem;">
+        Expense categories with mean, standard deviation, and anomaly threshold (mean + 2σ).
+    </p>
+    <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Transactions</th>
+                    <th>Mean</th>
+                    <th>Std Dev</th>
+                    <th>Threshold (2σ)</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in category_stats %}
+                <tr>
+                    <td style="font-weight:600;">{{ s.category }}</td>
+                    <td>{{ s.count }}</td>
+                    <td>{{ preferred_currency.symbol }}{{ s.mean }}</td>
+                    <td>{{ preferred_currency.symbol }}{{ s.std_dev }}</td>
+                    <td>
+                        {% if s.threshold %}
+                        {{ preferred_currency.symbol }}{{ s.threshold }}
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if s.note %}
+                        <span style="color:#f39c12; font-size:0.85rem;">{{ s.note }}</span>
+                        {% else %}
+                        <span style="color:#27ae60; font-size:0.85rem;">✓ Analyzed</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align:center; padding:2rem; color:#999;">
+                        No expense transactions found. Add some transactions to see anomaly analysis.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div style="margin-top:1.5rem; padding:1rem; background:#f8f9fa; border-radius:8px; font-size:0.85rem; color:#666;">
+    <strong>How it works:</strong> The anomaly detection algorithm computes the mean (average) and standard deviation
+    for each expense category. Transactions with amounts exceeding <strong>mean + 2σ</strong> (Z-score > 2)
+    are flagged as anomalous. This method is based on the statistical assumption that ~95% of normal
+    transactions fall within 2 standard deviations of the mean. At least 3 transactions per category
+    are required for reliable analysis.
+</div>
+{% endblock %}

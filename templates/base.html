@@ -333,6 +333,9 @@
             <a href="{% url 'finance:category_list' %}">Categories</a>
             <a href="{% url 'finance:budget_list' %}">Budgets</a>
             <a href="{% url 'reports:monthly_report' %}">Reports</a>
+            <a href="{% url 'reports:anomaly' %}">Anomalies</a>
+            <a href="{% url 'reports:ai_insights' %}">AI Insights</a>
+            <a href="{% url 'finance:import_statement' %}">Import</a>
             {% include "includes/nav_notifications.html" %}
             {% endif %}
         </div>
