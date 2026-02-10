@@ -15,5 +15,11 @@ python manage.py migrate --noinput
 echo "Collecting static files..."
 python manage.py collectstatic --noinput --clear
 
+echo "Seeding currencies..."
+python manage.py seed_currencies
+
+echo "Configuring site and Google OAuth..."
+python manage.py configure_site
+
 echo "Starting application..."
 exec "$@"
