@@ -106,11 +106,15 @@ def _check_budget_overrun(user, transaction):
     """
     After an expense transaction, check if it causes a budget overrun
     or nears the limit (80%+). Creates in-app notifications and sends
-    email alerts (one per breach, tracked via last_notified_at).
+    email alerts via Resend SDK (one per breach, tracked via last_notified_at).
     """
     from django.utils import timezone
-    from django.core.mail import send_mail
     from django.conf import settings
+    import resend
+    import logging
+
+    logger = logging.getLogger(__name__)
+    resend.api_key = settings.RESEND_API_KEY
 
     budgets = Budget.objects.filter(
         user=user,
@@ -163,18 +167,17 @@ def _check_budget_overrun(user, transaction):
             notification_type=ntype,
         )
 
-        # Send email alert
-        if user.email:
+        # Send email alert via Resend SDK
+        if user.email and settings.RESEND_API_KEY:
             try:
-                send_mail(
-                    subject=f'[Finance Tracker] {budget.category.name} — {ntype.replace("_", " ").title()}',
-                    message=msg,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[user.email],
-                    fail_silently=True,
-                )
-            except Exception:
-                pass  # Email failure should never block transactions
+                resend.Emails.send({
+                    "from": settings.DEFAULT_FROM_EMAIL,
+                    "to": [user.email],
+                    "subject": f'[Finance Tracker] {budget.category.name} — {ntype.replace("_", " ").title()}',
+                    "html": f'<p>{msg}</p>',
+                })
+            except Exception as e:
+                logger.warning(f'Email to {user.email} failed: {e}')
 
             budget.last_notified_at = timezone.now()
             budget.save(update_fields=['last_notified_at'])
