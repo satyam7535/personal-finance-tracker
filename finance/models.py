@@ -189,6 +189,12 @@ class Budget(models.Model):
         related_name='budgets',
         help_text='Only expense categories can have budgets.'
     )
+    currency = models.ForeignKey(
+        Currency, on_delete=models.PROTECT,
+        related_name='budgets',
+        help_text='Currency in which this budget limit is set.',
+        null=True, blank=True,
+    )
     limit_amount = models.DecimalField(
         max_digits=12, decimal_places=2,
         help_text='Maximum spending limit for this category in a month.'
@@ -242,22 +248,23 @@ class Budget(models.Model):
         if errors:
             raise ValidationError(errors)
 
+    def _budget_currency(self):
+        """Return the currency this budget's limit is denominated in."""
+        if self.currency_id:
+            return self.currency
+        from finance.currency_utils import get_user_preferred_currency
+        return get_user_preferred_currency(self.user)
+
     @property
     def spent(self):
         """
         Total spent in this category for this budget's month,
-        normalised to the user's preferred currency via USD.
-
-        Each transaction's amount is multiplied by its own
-        currency.exchange_rate_to_usd, then divided by the
-        target (preferred) currency's rate — giving a correct
-        cross-currency total.
+        normalised to the budget's own currency via USD.
         """
         from django.db.models import Sum, F
-        from finance.currency_utils import get_user_preferred_currency
 
-        target = get_user_preferred_currency(self.user)
-        target_rate = target.exchange_rate_to_usd or Decimal('1')
+        budget_cur = self._budget_currency()
+        budget_rate = budget_cur.exchange_rate_to_usd or Decimal('1')
 
         # Sum(amount * from_rate) gives total in USD
         total_usd = Transaction.objects.filter(
@@ -270,14 +277,50 @@ class Budget(models.Model):
             total=Sum(F('amount') * F('currency__exchange_rate_to_usd'))
         )['total'] or Decimal('0.00')
 
-        # Convert USD total to preferred currency
+        # Convert USD total to budget's currency
+        return (total_usd / budget_rate).quantize(
+            Decimal('0.01'), rounding=ROUND_HALF_UP
+        )
+
+    @property
+    def limit_in_preferred(self):
+        """
+        Convert the budget's limit_amount to the user's preferred
+        display currency.
+        """
+        from finance.currency_utils import convert_amount, get_user_preferred_currency
+        budget_cur = self._budget_currency()
+        target = get_user_preferred_currency(self.user)
+        return convert_amount(self.limit_amount, budget_cur, target)
+
+    @property
+    def spent_in_preferred(self):
+        """
+        Total spent converted to the user's preferred display currency.
+        """
+        from django.db.models import Sum, F
+        from finance.currency_utils import get_user_preferred_currency
+
+        target = get_user_preferred_currency(self.user)
+        target_rate = target.exchange_rate_to_usd or Decimal('1')
+
+        total_usd = Transaction.objects.filter(
+            user=self.user,
+            category=self.category,
+            type='EXPENSE',
+            date__year=self.month.year,
+            date__month=self.month.month,
+        ).aggregate(
+            total=Sum(F('amount') * F('currency__exchange_rate_to_usd'))
+        )['total'] or Decimal('0.00')
+
         return (total_usd / target_rate).quantize(
             Decimal('0.01'), rounding=ROUND_HALF_UP
         )
 
     @property
     def percentage_used(self):
-        """Percentage of budget used."""
+        """Percentage of budget used (in budget's own currency)."""
         if self.limit_amount and self.limit_amount > 0:
             return ((self.spent / self.limit_amount) * 100).quantize(
                 Decimal('0.1'), rounding=ROUND_HALF_UP
@@ -286,14 +329,14 @@ class Budget(models.Model):
 
     @property
     def is_overrun(self):
-        """Whether spending has exceeded the budget."""
+        """Whether spending has exceeded the budget (in budget's own currency)."""
         return self.spent > self.limit_amount
 
     @property
     def currency_symbol(self):
-        """Return the user's preferred currency symbol for display."""
-        from finance.currency_utils import get_user_preferred_currency
-        return get_user_preferred_currency(self.user).symbol
+        """Return the budget's own currency symbol for display."""
+        budget_cur = self._budget_currency()
+        return budget_cur.symbol
 
 
 class Notification(models.Model):

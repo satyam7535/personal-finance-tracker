@@ -29,7 +29,7 @@
             <tr>
                 <td>{{ item.budget.category.name }}</td>
                 <td>{{ item.budget.month|date:"M Y" }}</td>
-                <td>{{ preferred_currency.symbol }}{{ item.budget.limit_amount }}</td>
+                <td>{{ preferred_currency.symbol }}{{ item.limit }}</td>
                 <td>{{ preferred_currency.symbol }}{{ item.spent }}</td>
                 <td style="{% if item.remaining < 0 %}color: #e74c3c; font-weight: 600;{% endif %}">
                     {{ preferred_currency.symbol }}{{ item.remaining }}

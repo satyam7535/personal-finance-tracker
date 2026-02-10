@@ -213,18 +213,21 @@ def category_delete(request, pk):
 @login_required
 def budget_list(request):
     """List all budgets for the current user with progress."""
-    budgets = Budget.objects.filter(user=request.user).select_related('category')
+    budgets = Budget.objects.filter(user=request.user).select_related('category', 'currency')
     preferred = get_user_preferred_currency(request.user)
 
     # Enrich with computed properties for template
     budget_data = []
     for budget in budgets:
+        limit_display = budget.limit_in_preferred
+        spent_display = budget.spent_in_preferred
         budget_data.append({
             'budget': budget,
-            'spent': budget.spent,
+            'spent': spent_display,
+            'limit': limit_display,
             'percentage': budget.percentage_used,
             'is_overrun': budget.is_overrun,
-            'remaining': budget.limit_amount - budget.spent,
+            'remaining': limit_display - spent_display,
         })
 
     return render(request, 'finance/budget_list.html', {

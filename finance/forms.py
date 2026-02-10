@@ -79,7 +79,7 @@ class BudgetForm(forms.ModelForm):
     """Form to create/edit monthly budgets for expense categories."""
     class Meta:
         model = Budget
-        fields = ['category', 'limit_amount', 'month']
+        fields = ['category', 'limit_amount', 'currency', 'month']
         widgets = {
             'month': forms.DateInput(attrs={'type': 'month'}),
             'limit_amount': forms.NumberInput(attrs={'step': '0.01', 'placeholder': '0.00'}),
@@ -94,6 +94,14 @@ class BudgetForm(forms.ModelForm):
                 user=user, type='EXPENSE'
             )
         self.fields['category'].empty_label = '— Select Expense Category —'
+        # Only show active currencies
+        self.fields['currency'].queryset = Currency.objects.filter(is_active=True)
+        self.fields['currency'].empty_label = None
+        # Default to user's preferred currency
+        if not self.instance.currency_id and user:
+            from finance.currency_utils import get_user_preferred_currency
+            preferred = get_user_preferred_currency(user)
+            self.initial['currency'] = preferred.pk
         # Accept "YYYY-MM" from <input type="month"> as well as "YYYY-MM-DD"
         self.fields['month'].input_formats = ['%Y-%m', '%Y-%m-%d']
 
