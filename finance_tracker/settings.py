@@ -13,8 +13,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ─── Security ────────────────────────────────────────────────────────────────
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
+
+# Base URL for the application (set this to your domain in production)
+BASE_URL = config('BASE_URL', default='http://localhost:8000')
+
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
-CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='http://localhost,http://127.0.0.1', cast=Csv())
+
+# Automatically configure CSRF trusted origins from BASE_URL if not explicitly set
+default_csrf_origins = f"{BASE_URL},http://localhost:8000,http://127.0.0.1:8000"
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default=default_csrf_origins, cast=Csv())
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # ─── Application definition ─────────────────────────────────────────────────
@@ -142,6 +149,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ─── Sites framework (required by allauth) ──────────────────────────────────
 SITE_ID = 1
+
+# ─── Site URL configuration ─────────────────────────────────────────────────
+# Used for generating absolute URLs in emails, OAuth callbacks, etc.
+SITE_URL = BASE_URL
 
 # ─── Authentication backends ────────────────────────────────────────────────
 AUTHENTICATION_BACKENDS = [
