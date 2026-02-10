@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Tracker — Take Control of Your Money</title>
+    <meta name="description" content="Track expenses, manage budgets and gain AI-powered financial insights with Finance Tracker.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background: #0a0e27;
+            color: #ffffff;
+        }
+
+        /* ─── Animated Background ─────────────────────────────────── */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            padding: 2rem;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(52, 152, 219, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(46, 204, 113, 0.12) 0%, transparent 50%),
+                radial-gradient(circle at 50% 80%, rgba(155, 89, 182, 0.10) 0%, transparent 50%);
+            animation: bgShift 15s ease-in-out infinite alternate;
+            z-index: 0;
+        }
+
+        @keyframes bgShift {
+            0%   { transform: translate(0, 0) scale(1); }
+            50%  { transform: translate(-3%, 2%) scale(1.05); }
+            100% { transform: translate(2%, -1%) scale(1); }
+        }
+
+        /* Floating orbs */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            z-index: 0;
+        }
+
+        .orb-1 {
+            width: 400px; height: 400px;
+            background: #3498db;
+            top: -100px; right: -100px;
+            animation: float1 8s ease-in-out infinite;
+        }
+
+        .orb-2 {
+            width: 300px; height: 300px;
+            background: #27ae60;
+            bottom: -50px; left: -80px;
+            animation: float2 10s ease-in-out infinite;
+        }
+
+        .orb-3 {
+            width: 250px; height: 250px;
+            background: #9b59b6;
+            top: 40%; left: 60%;
+            animation: float3 12s ease-in-out infinite;
+        }
+
+        @keyframes float1 {
+            0%, 100% { transform: translate(0, 0); }
+            50%      { transform: translate(-30px, 40px); }
+        }
+        @keyframes float2 {
+            0%, 100% { transform: translate(0, 0); }
+            50%      { transform: translate(40px, -30px); }
+        }
+        @keyframes float3 {
+            0%, 100% { transform: translate(0, 0); }
+            50%      { transform: translate(-20px, -40px); }
+        }
+
+        /* ─── Content ─────────────────────────────────────────────── */
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 720px;
+        }
+
+        .emoji-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            display: inline-block;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50%      { transform: translateY(-12px); }
+        }
+
+        .hero-title {
+            font-size: clamp(2.2rem, 6vw, 4rem);
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+            margin-bottom: 1.2rem;
+            background: linear-gradient(135deg, #ffffff 0%, #a8d8ea 50%, #27ae60 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1rem, 2.5vw, 1.25rem);
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.65);
+            line-height: 1.7;
+            margin-bottom: 2.5rem;
+            max-width: 560px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* ─── CTA Button ──────────────────────────────────────────── */
+        .cta-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 1rem 2.4rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            color: #fff;
+            background: linear-gradient(135deg, #3498db 0%, #27ae60 100%);
+            border: none;
+            border-radius: 60px;
+            text-decoration: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            box-shadow: 0 4px 25px rgba(52, 152, 219, 0.35);
+        }
+
+        .cta-btn:hover {
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 8px 40px rgba(52, 152, 219, 0.5);
+        }
+
+        .cta-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .cta-btn .arrow {
+            transition: transform 0.25s ease;
+        }
+
+        .cta-btn:hover .arrow {
+            transform: translateX(4px);
+        }
+
+        /* Shimmer effect */
+        .cta-btn::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%   { left: -100%; }
+            50%  { left: 100%; }
+            100% { left: 100%; }
+        }
+
+        /* ─── Feature Pills ───────────────────────────────────────── */
+        .features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            justify-content: center;
+            margin-top: 3rem;
+        }
+
+        .feature-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.55rem 1.1rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.75);
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .feature-pill:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        /* ─── Footer ──────────────────────────────────────────────── */
+        .footer {
+            width: 100%;
+            text-align: center;
+            padding: 2rem 1rem 1.5rem;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.35);
+            background: #0a0e27;
+            letter-spacing: 0.02em;
+        }
+
+        /* ─── Responsive ──────────────────────────────────────────── */
+        @media (max-width: 480px) {
+            .cta-btn {
+                padding: 0.85rem 1.8rem;
+                font-size: 1rem;
+            }
+
+            .features {
+                gap: 0.5rem;
+            }
+
+            .feature-pill {
+                font-size: 0.78rem;
+                padding: 0.45rem 0.9rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <section class="hero">
+        <!-- Floating orbs -->
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+
+        <div class="hero-content">
+            <div class="emoji-icon">💰</div>
+            <h1 class="hero-title">Welcome to Finance Tracker</h1>
+            <p class="hero-subtitle">
+                Take control of your money. Track expenses, manage budgets
+                and unlock AI-powered insights — all in one beautiful place.
+            </p>
+
+            <a href="/auth/login/" class="cta-btn" id="get-started-btn">
+                Click here to get started
+                <span class="arrow">→</span>
+            </a>
+
+            <div class="features">
+                <span class="feature-pill">📊 Smart Dashboard</span>
+                <span class="feature-pill">💳 Expense Tracking</span>
+                <span class="feature-pill">🎯 Budget Goals</span>
+                <span class="feature-pill">🤖 AI Insights</span>
+                <span class="feature-pill">📈 Monthly Reports</span>
+                <span class="feature-pill">🔔 Anomaly Alerts</span>
+                <span class="feature-pill">⚠️ Overrun Notifications</span>
+            </div>
+        </div>
+
+    </section>
+
+    <div class="footer">
+        &copy; 2026 Finance Tracker. Built with ❤️
+    </div>
+</body>
+
+</html>
