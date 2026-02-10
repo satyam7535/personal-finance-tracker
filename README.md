@@ -916,13 +916,7 @@ Password: demo_password
 
 > Update these credentials in your deployment as needed.
 
----
-
-## 📄 License
-
-This project is part of the FinJunction Backend Round 2 assignment.
-
----
+------
 
 <div align="center">
   <b>Built with ❤️ by Satyam Keshari | IIIT Pune</b>
