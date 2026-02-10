@@ -111,6 +111,22 @@
             margin-bottom: 1.5rem;
             display: inline-block;
             animation: bounce 2s ease-in-out infinite;
+            position: relative;
+        }
+
+        .floating-symbol {
+            position: absolute;
+            font-size: 1.3rem;
+            animation: symbolFloat 4s ease-in-out infinite;
+        }
+        .sym-1 { top: -18px; left: -38px; animation-delay: 0s; }
+        .sym-3 { bottom: 0;  left: -48px; animation-delay: 1.2s; }
+        .sym-4 { bottom: 0;  right: -48px; animation-delay: 2.0s; }
+        .sym-5 { top: 50%;   right: -55px; animation-delay: 2.8s; transform: translateY(-50%); }
+
+        @keyframes symbolFloat {
+            0%, 100% { opacity: 0.5; transform: translateY(0) scale(1); }
+            50%      { opacity: 1;   transform: translateY(-6px) scale(1.15); }
         }
 
         @keyframes bounce {
@@ -264,7 +280,7 @@
 
         <div class="hero-content">
             <div class="emoji-icon">💰</div>
-            <h1 class="hero-title">Welcome to Finance Tracker</h1>
+            <h1 class="hero-title">Welcome to Personal Finance Tracker</h1>
             <p class="hero-subtitle">
                 Take control of your money. Track expenses, manage budgets
                 and unlock AI-powered insights — all in one beautiful place.
