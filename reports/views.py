@@ -77,6 +77,10 @@ def monthly_report_view(request):
     income_cats = [c['category'] for c in report['income_breakdown']]
     income_vals = [float(c['total']) for c in report['income_breakdown']]
 
+    # Investment breakdown for pie chart
+    invest_cats = [c['category'] for c in report.get('investment_breakdown', [])]
+    invest_vals = [float(c['total']) for c in report.get('investment_breakdown', [])]
+
     # Year/month options for the selector — pre-mark selected for template
     year_choices = [
         {'value': y, 'label': y, 'selected': 'selected' if y == year else ''}
@@ -101,6 +105,8 @@ def monthly_report_view(request):
         'expense_vals_json': json.dumps(expense_vals),
         'income_cats_json': json.dumps(income_cats),
         'income_vals_json': json.dumps(income_vals),
+        'invest_cats_json': json.dumps(invest_cats),
+        'invest_vals_json': json.dumps(invest_vals),
     }
     return render(request, 'reports/monthly_report.html', context)
 

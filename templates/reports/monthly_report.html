@@ -29,8 +29,7 @@
 </div>
 
 <!-- ─── Summary ────────────────────────────────────────────────── -->
-<h3 style="margin-bottom: 1rem;">{{ report.month_name }} <small style="font-size: 0.7em; color: #888;">({{
-        report.currency.code }})</small></h3>
+<h3 style="margin-bottom: 1rem;">{{ report.month_name }}</h3>
 
 <div class="grid grid-4" style="margin-bottom: 1.5rem;">
     <div class="card stat-card income">
@@ -52,7 +51,7 @@
 </div>
 
 <!-- ─── Charts ─────────────────────────────────────────────────── -->
-<div class="grid grid-2" style="margin-bottom: 1.5rem;">
+<div class="grid grid-3" style="margin-bottom: 1.5rem;">
     <div class="card">
         <h2>Expense Breakdown</h2>
         {% if report.expense_breakdown %}
@@ -67,6 +66,14 @@
         <canvas id="incomeChart" height="220"></canvas>
         {% else %}
         <p style="text-align:center; color:#888; padding:2rem;">No income recorded.</p>
+        {% endif %}
+    </div>
+    <div class="card">
+        <h2>Investment Breakdown</h2>
+        {% if report.investment_breakdown %}
+        <canvas id="investChart" height="220"></canvas>
+        {% else %}
+        <p style="text-align:center; color:#888; padding:2rem;">No investments recorded.</p>
         {% endif %}
     </div>
 </div>
@@ -209,46 +216,99 @@
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script>
+    Chart.register(ChartDataLabels);
+
     const palette = [
         '#e74c3c', '#3498db', '#f39c12', '#9b59b6', '#1abc9c',
         '#e67e22', '#2ecc71', '#34495e', '#e91e63', '#00bcd4'
     ];
 
+    const percentOpts = {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12 } },
+            datalabels: {
+                color: '#fff',
+                font: { weight: 'bold', size: 13 },
+                formatter: function(value, ctx) {
+                    var sum = ctx.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                    var pct = ((value / sum) * 100).toFixed(1);
+                    return pct + '%';
+                },
+                display: function(ctx) {
+                    var sum = ctx.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                    return (ctx.dataset.data[ctx.dataIndex] / sum) > 0.03;
+                }
+            }
+        }
+    };
+
     // ─── Expense Pie ──────────────────────────────────────────────
     const expCtx = document.getElementById('expenseChart');
     if (expCtx) {
-        const cats = {{ expense_cats_json| safe
-    }};
-    const vals = {{ expense_vals_json| safe }};
-    if (cats.length > 0) {
-        new Chart(expCtx, {
-            type: 'pie',
-            data: {
-                labels: cats,
-                datasets: [{ data: vals, backgroundColor: palette.slice(0, cats.length), borderWidth: 2, borderColor: '#fff' }]
-            },
-            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
-        });
+        const cats = {{ expense_cats_json|safe }};
+        const vals = {{ expense_vals_json|safe }};
+        if (cats.length > 0) {
+            new Chart(expCtx, {
+                type: 'pie',
+                data: {
+                    labels: cats,
+                    datasets: [{
+                        data: vals,
+                        backgroundColor: palette.slice(0, cats.length),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: percentOpts
+            });
+        }
     }
-}
 
     // ─── Income Pie ───────────────────────────────────────────────
     const incCtx = document.getElementById('incomeChart');
     if (incCtx) {
-        const cats2 = {{ income_cats_json| safe
-    }};
-    const vals2 = {{ income_vals_json| safe }};
-    if (cats2.length > 0) {
-        new Chart(incCtx, {
-            type: 'pie',
-            data: {
-                labels: cats2,
-                datasets: [{ data: vals2, backgroundColor: palette.slice(0, cats2.length), borderWidth: 2, borderColor: '#fff' }]
-            },
-            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
-        });
+        const cats2 = {{ income_cats_json|safe }};
+        const vals2 = {{ income_vals_json|safe }};
+        if (cats2.length > 0) {
+            new Chart(incCtx, {
+                type: 'pie',
+                data: {
+                    labels: cats2,
+                    datasets: [{
+                        data: vals2,
+                        backgroundColor: palette.slice(0, cats2.length),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: percentOpts
+            });
+        }
     }
-}
+
+    // ─── Investment Pie ───────────────────────────────────────────
+    const invCtx = document.getElementById('investChart');
+    if (invCtx) {
+        const cats3 = {{ invest_cats_json|safe }};
+        const vals3 = {{ invest_vals_json|safe }};
+        if (cats3.length > 0) {
+            new Chart(invCtx, {
+                type: 'pie',
+                data: {
+                    labels: cats3,
+                    datasets: [{
+                        data: vals3,
+                        backgroundColor: palette.slice(0, cats3.length),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: percentOpts
+            });
+        }
+    }
 </script>
 {% endblock %}

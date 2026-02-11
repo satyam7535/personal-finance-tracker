@@ -142,67 +142,80 @@
     // ─── Trend Chart (Bar) ────────────────────────────────────────
     const trendCtx = document.getElementById('trendChart');
     if (trendCtx) {
-        new Chart(trendCtx, {
-            type: 'bar',
-            data: {
-                labels: {{ trend_labels_json| safe }},
-    datasets: [
-        {
-            label: 'Income',
-            data: {{ trend_income_json| safe }},
-        backgroundColor: 'rgba(39, 174, 96, 0.7)',
-        borderColor: '#27ae60',
-        borderWidth: 1,
-        borderRadius: 4,
+        const trendLabels = {{ trend_labels_json|safe }};
+        const trendIncome = {{ trend_income_json|safe }};
+        const trendExpense = {{ trend_expense_json|safe }};
+
+        if (trendLabels.length > 0) {
+            new Chart(trendCtx, {
+                type: 'bar',
+                data: {
+                    labels: trendLabels,
+                    datasets: [
+                        {
+                            label: 'Income',
+                            data: trendIncome,
+                            backgroundColor: 'rgba(39, 174, 96, 0.7)',
+                            borderColor: '#27ae60',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                        },
+                        {
+                            label: 'Expenses',
+                            data: trendExpense,
+                            backgroundColor: 'rgba(231, 76, 60, 0.7)',
+                            borderColor: '#e74c3c',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                        }
+                    ]
                 },
-        {
-            label: 'Expenses',
-            data: {{ trend_expense_json| safe }},
-        backgroundColor: 'rgba(231, 76, 60, 0.7)',
-        borderColor: '#e74c3c',
-        borderWidth: 1,
-        borderRadius: 4,
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: function(v) { return '{{ currency.symbol }}' + v; } }
+                        }
+                    }
                 }
-    ]
-        },
-    options: {
-        responsive: true,
-            plugins: { legend: { position: 'bottom' } },
-        scales: {
-            y: { beginAtZero: true, ticks: { callback: v => '{{ currency.symbol }}' + v } }
+            });
+        } else {
+            trendCtx.parentElement.innerHTML += '<p style="text-align:center;color:#888;padding:2rem;">No trend data yet. Add transactions to see the chart.</p>';
         }
     }
-    });
-}
 
     // ─── Expense Doughnut ─────────────────────────────────────────
     const expCtx = document.getElementById('expenseChart');
     if (expCtx) {
-        const cats = {{ expense_cats_json| safe
-    }};
-    const vals = {{ expense_vals_json| safe }};
-    if (cats.length > 0) {
-        const palette = [
-            '#e74c3c', '#3498db', '#f39c12', '#9b59b6', '#1abc9c',
-            '#e67e22', '#2ecc71', '#34495e', '#e91e63', '#00bcd4'
-        ];
-        new Chart(expCtx, {
-            type: 'doughnut',
-            data: {
-                labels: cats,
-                datasets: [{
-                    data: vals,
-                    backgroundColor: palette.slice(0, cats.length),
-                    borderWidth: 2,
-                    borderColor: '#fff',
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
-            }
-        });
+        const cats = {{ expense_cats_json|safe }};
+        const vals = {{ expense_vals_json|safe }};
+
+        if (cats.length > 0) {
+            const palette = [
+                '#e74c3c', '#3498db', '#f39c12', '#9b59b6', '#1abc9c',
+                '#e67e22', '#2ecc71', '#34495e', '#e91e63', '#00bcd4'
+            ];
+            new Chart(expCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: cats,
+                    datasets: [{
+                        data: vals,
+                        backgroundColor: palette.slice(0, cats.length),
+                        borderWidth: 2,
+                        borderColor: '#fff',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12 } }
+                    }
+                }
+            });
+        }
     }
-}
 </script>
 {% endblock %}
