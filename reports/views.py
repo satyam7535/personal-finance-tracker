@@ -39,8 +39,12 @@ def dashboard_view(request):
     trend_expense = [expense_map.get(m, 0) for m in sorted_months]
 
     # Expense breakdown for doughnut chart
-    expense_cats = [c['category'] for c in data['expense_breakdown']]
     expense_vals = [float(c['total']) for c in data['expense_breakdown']]
+    total_exp = sum(expense_vals)
+    expense_cats = [
+        f"{c['category']} {round(float(c['total']) / total_exp * 100, 1)}%" if total_exp > 0 else c['category']
+        for c in data['expense_breakdown']
+    ]
 
     context = {
         **data,
@@ -70,8 +74,12 @@ def monthly_report_view(request):
     report = get_monthly_report(request.user, year, month)
 
     # Expense breakdown for pie chart
-    expense_cats = [c['category'] for c in report['expense_breakdown']]
     expense_vals = [float(c['total']) for c in report['expense_breakdown']]
+    total_exp = sum(expense_vals)
+    expense_cats = [
+        f"{c['category']} {round(float(c['total']) / total_exp * 100, 1)}%" if total_exp > 0 else c['category']
+        for c in report['expense_breakdown']
+    ]
 
     # Income breakdown for pie chart
     income_cats = [c['category'] for c in report['income_breakdown']]

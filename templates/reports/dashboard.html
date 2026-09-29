@@ -1,314 +1,265 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% load static %}
 
 {% block title %}Dashboard — Finance Tracker{% endblock %}
 
-{% block extra_css %}
+{% block content %}
+<!-- Welcome Header -->
+<div class="fade-in-up" style="margin-bottom: 2rem;">
+    <h2 style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.25rem;">Hello, {{ request.user.username|title }} 👋</h2>
+    <span style="color: var(--text-muted); font-size: 0.95rem;">Here's your financial overview.</span>
+</div>
+
+<!-- Key Metrics (4-column grid) -->
+<div class="grid grid-4 fade-in-up delay-1" style="margin-bottom: 2rem;">
+    <!-- Income -->
+    <div class="card hover-lift" style="padding: 1.25rem; margin-bottom: 0; background: #ecfdf5; border-color: #a7f3d0;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--success); text-transform: uppercase; margin-bottom: 0.5rem;">Income</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: var(--success); margin-bottom: 0.25rem;">{{ currency.symbol }}{{ income }}</div>
+        <div style="font-size: 0.8rem; font-weight: 500; color: var(--success); opacity: 0.8;">This month</div>
+    </div>
+    
+    <!-- Expenses -->
+    <div class="card hover-lift" style="padding: 1.25rem; margin-bottom: 0; background: #fef2f2; border-color: #fecaca;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--danger); text-transform: uppercase; margin-bottom: 0.5rem;">Expenses</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: var(--danger); margin-bottom: 0.25rem;">{{ currency.symbol }}{{ expense }}</div>
+        <div style="font-size: 0.8rem; font-weight: 500; color: var(--danger); opacity: 0.8;">This month</div>
+    </div>
+    
+    <!-- Investments -->
+    <div class="card hover-lift" style="padding: 1.25rem; margin-bottom: 0; background: #fffbeb; border-color: #fde68a;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--warning); text-transform: uppercase; margin-bottom: 0.5rem;">Investments</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: var(--warning); margin-bottom: 0.25rem;">{{ currency.symbol }}{{ investment|default:"0.00" }}</div>
+        <div style="font-size: 0.8rem; font-weight: 500; color: var(--warning); opacity: 0.8;">This month</div>
+    </div>
+    
+    <!-- Net Savings -->
+    <div class="card hover-lift" style="padding: 1.25rem; margin-bottom: 0; background: #EEF2FF; border-color: #c7d2fe;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 0.5rem;">Net Savings</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: var(--primary); margin-bottom: 0.25rem;">{{ currency.symbol }}{{ savings }}</div>
+        <div style="font-size: 0.8rem; font-weight: 500; color: var(--primary); opacity: 0.8;">This month</div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="dashboard-charts fade-in-up delay-2" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <!-- Bar Chart: Income vs Expenses -->
+    <div class="card hover-lift" style="margin-bottom: 0;">
+        <h3 class="card-title">Income vs Expenses</h3>
+        <div style="height: 300px; position: relative;">
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Donut Chart: Spending Breakdown -->
+    <div class="card hover-lift" style="margin-bottom: 0;">
+        <h3 class="card-title">Spending</h3>
+        <div style="height: 300px; position: relative; display: flex; align-items: center; justify-content: center;">
+            <canvas id="categoryChart" style="position: relative; z-index: 2;"></canvas>
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 1;">
+                <div style="font-size: 1.05rem; font-weight: 800; color: var(--text-main);">{{ currency.symbol }}{{ expense }}</div>
+                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Spent</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Section: Transactions & Budgets -->
+<div class="grid grid-2 fade-in-up delay-3">
+    <!-- Recent Transactions -->
+    <div class="card hover-lift" style="margin-bottom: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <h3 class="card-title" style="margin: 0;">Recent Transactions</h3>
+            <a href="{% url 'finance:transaction_list' %}" style="font-size: 0.85rem; font-weight: 600; color: var(--primary); text-decoration: none;">View all →</a>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            {% for tx in recent_transactions %}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid var(--border); transition: var(--transition);" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; background: #F3F4F6;">
+                        {{ tx.category.icon|default:"📄" }}
+                    </div>
+                    <div>
+                        <div style="font-weight: 600; color: var(--text-main); font-size: 0.95rem;">{{ tx.description|default:tx.category.name|truncatechars:20 }}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">{{ tx.date|date:"M d, Y" }} · {{ tx.category.name }}</div>
+                    </div>
+                </div>
+                <div style="font-weight: 700; {% if tx.type == 'INCOME' %}color: var(--success);{% elif tx.type == 'EXPENSE' %}color: var(--danger);{% else %}color: var(--warning);{% endif %}">
+                    {% if tx.type == 'INCOME' %}+{% else %}-{% endif %}{{ currency.symbol }}{{ tx.amount }}
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                <h4>No transactions yet</h4>
+                <p>Log your first income or expense to see insights.</p>
+                <a href="{% url 'finance:transaction_create' %}" class="btn btn-primary btn-sm">+ Add Transaction</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Budget Overview -->
+    <div class="card hover-lift" style="margin-bottom: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <h3 class="card-title" style="margin: 0;">Budget Overview</h3>
+            {% if budget_alerts|length > 3 %}
+            <a href="{% url 'finance:budget_list' %}" style="font-size: 0.85rem; font-weight: 600; color: var(--primary); text-decoration: none;">View all →</a>
+            {% endif %}
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            {% for alert in budget_alerts|slice:":3" %}
+            <div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; align-items: flex-end;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">{{ alert.category }}</strong>
+                    <div style="font-size: 0.85rem; color: var(--text-muted); white-space: nowrap;">
+                        <span style="font-weight: 600; color: var(--text-main);">{{ currency.symbol }}{{ alert.spent }}</span> / {{ currency.symbol }}{{ alert.limit }}
+                        <span style="margin-left: 0.5rem; font-weight: 700; {% if alert.percentage >= 90 %}color: var(--danger);{% elif alert.percentage >= 75 %}color: var(--warning);{% else %}color: var(--success);{% endif %}">{{ alert.percentage|floatformat:0 }}%</span>
+                    </div>
+                </div>
+                <div style="height: 8px; background: var(--bg-main); border-radius: 4px; overflow: hidden;">
+                    <div style="height: 100%; width: {{ alert.percentage }}%; max-width: 100%; border-radius: 4px; background: {% if alert.percentage >= 90 %}var(--danger){% elif alert.percentage >= 75 %}var(--warning){% else %}var(--success){% endif %}; transition: width 1s ease-in-out;"></div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                <h4>Set your first budget</h4>
+                <p>Keep your spending in check by setting limits.</p>
+                <a href="{% url 'finance:budget_create' %}" class="btn btn-primary btn-sm">+ Create Budget</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
 <style>
-    .dashboard-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2rem;
+    @media (min-width: 1024px) {
+        .dashboard-charts { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) !important; }
     }
-    .dashboard-header h2 {
-        font-size: 1.8rem;
-        font-weight: 800;
-        letter-spacing: -0.03em;
-        margin: 0;
-    }
-    .dashboard-header .currency-badge {
-        padding: 0.35rem 0.8rem;
-        background: rgba(79, 70, 229, 0.1);
-        color: var(--primary);
-        font-size: 0.8rem;
-        font-weight: 700;
-        border-radius: var(--radius-pill);
-        letter-spacing: 0.05em;
-    }
-    .insight-item {
-        padding: 0.8rem 0;
-        border-bottom: 1px solid var(--border);
-        font-size: 0.95rem;
-        display: flex;
-        align-items: flex-start;
-        gap: 0.75rem;
-        line-height: 1.6;
-    }
-    .insight-item:last-child { border-bottom: none; }
-    .insight-icon {
-        flex-shrink: 0;
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(79, 70, 229, 0.1);
-        border-radius: 8px;
-        font-size: 0.9rem;
-    }
-    .budget-status-badge {
-        padding: 0.25rem 0.6rem;
-        border-radius: var(--radius-pill);
-        font-size: 0.75rem;
-        font-weight: 700;
-        letter-spacing: 0.03em;
-    }
-    .badge-overrun { background: #fef2f2; color: var(--danger); }
-    .badge-warning { background: #fffbeb; color: #b45309; }
-    .badge-ok { background: #ecfdf5; color: #065f46; }
-    .empty-state {
-        text-align: center;
-        padding: 3rem 2rem;
-        color: var(--text-muted);
-    }
-    .empty-state p { margin-bottom: 1rem; font-size: 1rem; }
-    .empty-state a { color: var(--primary); font-weight: 600; text-decoration: none; }
-    .empty-state a:hover { text-decoration: underline; }
-    .tx-amount-income { color: var(--success); font-weight: 600; }
-    .tx-amount-expense { color: var(--danger); font-weight: 600; }
-    .tx-amount-investment { color: var(--warning); font-weight: 600; }
 </style>
 {% endblock %}
 
-{% block content %}
-<!-- ─── Header ────────────────────────────────────────────────── -->
-<div class="dashboard-header">
-    <h2>Dashboard</h2>
-    <span class="currency-badge">{{ currency.code }}</span>
-</div>
-
-<!-- ─── Stat Cards ─────────────────────────────────────────────── -->
-<div class="grid grid-4" style="margin-bottom: 2rem;">
-    <div class="card stat-card income">
-        <div class="stat-label">Income (this month)</div>
-        <div class="stat-value">{{ currency.symbol }}{{ income }}</div>
-    </div>
-    <div class="card stat-card expense">
-        <div class="stat-label">Expenses (this month)</div>
-        <div class="stat-value">{{ currency.symbol }}{{ expense }}</div>
-    </div>
-    <div class="card stat-card investment">
-        <div class="stat-label">Investments (this month)</div>
-        <div class="stat-value">{{ currency.symbol }}{{ investment }}</div>
-    </div>
-    <div class="card stat-card savings">
-        <div class="stat-label">Net Savings</div>
-        <div class="stat-value">{{ currency.symbol }}{{ savings }}</div>
-    </div>
-</div>
-
-<!-- ─── Charts Row ─────────────────────────────────────────────── -->
-<div class="grid grid-2">
-    <!-- Trend Chart -->
-    <div class="card">
-        <h2>Income vs Expenses (6 months)</h2>
-        <canvas id="trendChart" height="220"></canvas>
-    </div>
-
-    <!-- Expense Breakdown -->
-    <div class="card">
-        <h2>Expense Breakdown</h2>
-        {% if expense_breakdown %}
-        <canvas id="expenseChart" height="220"></canvas>
-        {% else %}
-        <div class="empty-state">
-            <p>📊 No expense data yet.</p>
-            <a href="{% url 'finance:transaction_create' %}">Add a transaction to see your breakdown</a>
-        </div>
-        {% endif %}
-    </div>
-</div>
-
-<!-- ─── Insights ───────────────────────────────────────────────── -->
-{% if insights %}
-<div class="card">
-    <h2>💡 Insights</h2>
-    <div>
-        {% for tip in insights %}
-        <div class="insight-item">
-            <div class="insight-icon">💡</div>
-            <span>{{ tip }}</span>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
-
-<!-- ─── Budget Alerts + Recent Transactions ────────────────────── -->
-<div class="grid grid-2">
-    <!-- Budget Alerts -->
-    <div class="card">
-        <h2>🎯 Budget Alerts</h2>
-        {% if budget_alerts %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Category</th>
-                    <th>Spent / Limit</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for a in budget_alerts %}
-                <tr>
-                    <td style="font-weight: 600;">{{ a.category }}</td>
-                    <td>{{ currency.symbol }}{{ a.spent }} / {{ currency.symbol }}{{ a.limit }}</td>
-                    <td>
-                        {% if a.is_overrun %}
-                        <span class="budget-status-badge badge-overrun">OVERRUN</span>
-                        {% else %}
-                        <span class="budget-status-badge badge-warning">{{ a.percentage }}%</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <div class="empty-state">
-            <p>🎉 All budgets on track!</p>
-        </div>
-        {% endif %}
-    </div>
-
-    <!-- Recent Transactions -->
-    <div class="card">
-        <h2>📋 Recent Transactions</h2>
-        {% if recent_transactions %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Category</th>
-                    <th>Amount</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for tx in recent_transactions %}
-                <tr>
-                    <td>{{ tx.date|date:"M d" }}</td>
-                    <td>{{ tx.category.name }}</td>
-                    <td class="{% if tx.type == 'INCOME' %}tx-amount-income{% elif tx.type == 'EXPENSE' %}tx-amount-expense{% else %}tx-amount-investment{% endif %}">
-                        {{ tx.currency.symbol }}{{ tx.amount }}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        <div style="text-align: right; margin-top: 1rem;">
-            <a href="{% url 'finance:transaction_list' %}" class="btn btn-secondary btn-sm">View All →</a>
-        </div>
-        {% else %}
-        <div class="empty-state">
-            <p>No transactions yet.</p>
-            <a href="{% url 'finance:transaction_create' %}">Add your first transaction</a>
-        </div>
-        {% endif %}
-    </div>
-</div>
-{% endblock %}
-
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // ─── Chart defaults ──────────────────────────────────────────
-    Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
-    Chart.defaults.color = '#6b7280';
+document.addEventListener('DOMContentLoaded', function() {
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = '#6B7280';
+    
+    // Global Tooltip Styling
+    const tooltipOptions = {
+        backgroundColor: '#FFFFFF',
+        titleColor: '#111827',
+        bodyColor: '#4B5563',
+        borderColor: '#E3E7EF',
+        borderWidth: 1,
+        padding: 12,
+        boxPadding: 6,
+        cornerRadius: 8,
+        titleFont: { size: 13, weight: '700' },
+        bodyFont: { size: 12, weight: '500' },
+        boxWidth: 10,
+        boxHeight: 10,
+        usePointStyle: true
+    };
 
-    // ─── Trend Chart (Bar) ────────────────────────────────────────
+    // 1. Grouped Bar Chart (Income vs Expenses)
     const trendCtx = document.getElementById('trendChart');
-    if (trendCtx) {
-        const trendLabels = {{ trend_labels_json|safe }};
-        const trendIncome = {{ trend_income_json|safe }};
-        const trendExpense = {{ trend_expense_json|safe }};
-
-        if (trendLabels.length > 0) {
+    if(trendCtx) {
+        const labels = {{ trend_labels_json|safe|default:"[]" }};
+        const incomeData = {{ trend_income_json|safe|default:"[]" }};
+        const expenseData = {{ trend_expense_json|safe|default:"[]" }};
+        if (labels.length > 0) {
             new Chart(trendCtx, {
                 type: 'bar',
                 data: {
-                    labels: trendLabels,
+                    labels: labels,
                     datasets: [
                         {
                             label: 'Income',
-                            data: trendIncome,
-                            backgroundColor: 'rgba(16, 185, 129, 0.75)',
-                            borderColor: '#10b981',
-                            borderWidth: 1,
-                            borderRadius: 8,
-                            borderSkipped: false,
+                            data: incomeData,
+                            backgroundColor: '#10B981',
+                            borderRadius: 4,
+                            barPercentage: 0.6,
+                            categoryPercentage: 0.8
                         },
                         {
                             label: 'Expenses',
-                            data: trendExpense,
-                            backgroundColor: 'rgba(239, 68, 68, 0.75)',
-                            borderColor: '#ef4444',
-                            borderWidth: 1,
-                            borderRadius: 8,
-                            borderSkipped: false,
+                            data: expenseData,
+                            backgroundColor: '#EF4444',
+                            borderRadius: 4,
+                            barPercentage: 0.6,
+                            categoryPercentage: 0.8
                         }
                     ]
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { usePointStyle: true, padding: 20 }
-                        }
+                        legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 20 } },
+                        tooltip: tooltipOptions
                     },
                     scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(0,0,0,0.04)' },
-                            ticks: { callback: function(v) { return '{{ currency.symbol }}' + v; } }
-                        },
-                        x: {
-                            grid: { display: false }
-                        }
-                    }
+                        y: { beginAtZero: true, grid: { borderDash: [4, 4], color: '#E3E7EF' }, border: { display: false } },
+                        x: { grid: { display: false }, border: { display: false } }
+                    },
+                    interaction: { mode: 'index', intersect: false },
+                    animation: { duration: 1000, easing: 'easeOutQuart' }
                 }
             });
-        } else {
-            trendCtx.parentElement.innerHTML += '<div class="empty-state"><p>📈 No trend data yet. Add transactions to see the chart.</p></div>';
         }
     }
 
-    // ─── Expense Doughnut ─────────────────────────────────────────
-    const expCtx = document.getElementById('expenseChart');
-    if (expCtx) {
-        const cats = {{ expense_cats_json|safe }};
-        const vals = {{ expense_vals_json|safe }};
-
-        if (cats.length > 0) {
-            const palette = [
-                '#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6', '#10b981',
-                '#f97316', '#06b6d4', '#ec4899', '#84cc16', '#6366f1'
-            ];
-            new Chart(expCtx, {
+    // 2. Spending Donut Chart
+    const catCtx = document.getElementById('categoryChart');
+    if(catCtx) {
+        const labels = {{ expense_cats_json|safe|default:"[]" }};
+        const data = {{ expense_vals_json|safe|default:"[]" }};
+        if(labels.length > 0) {
+            new Chart(catCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: cats,
+                    labels: labels,
                     datasets: [{
-                        data: vals,
-                        backgroundColor: palette.slice(0, cats.length),
-                        borderWidth: 3,
-                        borderColor: '#fff',
-                        hoverBorderWidth: 0,
-                        hoverOffset: 8,
+                        data: data,
+                        backgroundColor: [
+                            '#4F46E5', '#3B82F6', '#0EA5E9', '#06B6D4', '#14B8A6',
+                            '#10B981', '#84CC16', '#EAB308', '#F59E0B', '#F97316'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#FFFFFF',
+                        hoverOffset: 6
                     }]
                 },
                 options: {
                     responsive: true,
-                    cutout: '65%',
+                    maintainAspectRatio: false,
+                    cutout: '80%',
                     plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { usePointStyle: true, padding: 16, boxWidth: 8 }
+                        legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 6, font: { size: 11 }, padding: 15 } },
+                        tooltip: {
+                            ...tooltipOptions,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) { label += ': '; }
+                                    if (context.parsed !== null) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const pct = Math.round((context.parsed / total) * 100);
+                                        label += '{{ currency.symbol }}' + context.parsed + ' (' + pct + '%)';
+                                    }
+                                    return label;
+                                }
+                            }
                         }
-                    }
+                    },
+                    animation: { animateScale: true, animateRotate: true, duration: 1200, easing: 'easeOutBounce' }
                 }
             });
         }
     }
+});
 </script>
 {% endblock %}

@@ -112,7 +112,7 @@ def _velocity_flag(tx, same_cat_txs):
             continue
         if other['tx'].date == tx.date:
             count += 1
-    return count if count >= 2 else None
+    return count if count >= 3 else None
 
 
 def _compute_risk_score(signals):
@@ -122,12 +122,12 @@ def _compute_risk_score(signals):
     """
     score = 0
     weights = {
-        'mad': 30,          # robust statistical outlier (immune to extreme skew)
-        'zscore': 35,       # strongest traditional statistical signal
-        'iqr': 25,          # robust outlier confirmation
-        'round_number': 15, # mild fraud indicator
-        'frequency': 15,    # unusual activity pattern
-        'velocity': 10,     # same-category clustering
+        'zscore': 30,       # strongest traditional statistical signal
+        'mad': 25,          # robust statistical outlier (immune to extreme skew)
+        'iqr': 20,          # robust outlier confirmation
+        'round_number': 10, # mild fraud indicator
+        'frequency': 10,    # unusual activity pattern
+        'velocity': 5,      # same-category clustering
     }
     for signal, weight in weights.items():
         if signals.get(signal):
@@ -145,7 +145,7 @@ def get_anomalies(user, sensitivity=2.0):
         3. IQR fence — robust for non-normal distributions
         4. Round numbers — fraud pattern indicator
         5. Frequency spike — unusual daily transaction volume
-        6. Velocity — same-category clustering
+        6. Velocity — same-category clustering (4+ per day)
 
     Returns:
         dict with anomalies, category_stats, detection_summary,
@@ -163,7 +163,10 @@ def get_anomalies(user, sensitivity=2.0):
         return {
             'anomalies': [],
             'category_stats': [],
-            'total_flagged': 0,
+            'total_analyzed': 0,
+            'normal_count': 0,
+            'review_count': 0,
+            'high_risk_count': 0,
             'preferred_currency': preferred,
             'detection_summary': {
                 'mad': 0, 'zscore': 0, 'iqr': 0, 'round_number': 0,
@@ -197,6 +200,11 @@ def get_anomalies(user, sensitivity=2.0):
 
     anomalies = []
     category_stats = []
+    normal_count = 0
+    review_count = 0
+    high_risk_count = 0
+    total_analyzed = len(tx_data)
+    
     detection_counts = {
         'mad': 0, 'zscore': 0, 'iqr': 0, 'round_number': 0,
         'frequency': 0, 'velocity': 0,
@@ -224,6 +232,7 @@ def get_anomalies(user, sensitivity=2.0):
                 'threshold_iqr': None,
                 'note': 'Insufficient data (need 3+ transactions)',
             })
+            normal_count += n
             continue
 
         # Standard Z-Score parameters
@@ -304,9 +313,16 @@ def get_anomalies(user, sensitivity=2.0):
                 signals['velocity'] = vel
                 detection_counts['velocity'] += 1
 
-            # Only flag if at least one signal triggered
             if signals:
                 risk_score = _compute_risk_score(signals)
+                if risk_score >= 60:
+                    high_risk_count += 1
+                elif risk_score >= 30:
+                    review_count += 1
+                else:
+                    normal_count += 1
+                    continue  # Ignore 0-29
+
                 anomalies.append({
                     'tx': tx,
                     'converted_amount': item['converted_amount'],
@@ -321,6 +337,8 @@ def get_anomalies(user, sensitivity=2.0):
                     'median': med_dec,
                     'deviation_pct': round(((amt - mean) / mean) * 100, 1) if mean > 0 else 0,
                 })
+            else:
+                normal_count += 1
 
     # Sort by risk score descending
     anomalies.sort(key=lambda x: x['risk_score'], reverse=True)
@@ -328,7 +346,10 @@ def get_anomalies(user, sensitivity=2.0):
     return {
         'anomalies': anomalies,
         'category_stats': sorted(category_stats, key=lambda x: x['category']),
-        'total_flagged': len(anomalies),
+        'total_analyzed': total_analyzed,
+        'normal_count': normal_count,
+        'review_count': review_count,
+        'high_risk_count': high_risk_count,
         'preferred_currency': preferred,
         'detection_summary': detection_counts,
     }

@@ -18,7 +18,7 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             min-height: 100vh;
             overflow-x: hidden;
-            background: #0a0e27;
+            background: #0F172A;
             color: #ffffff;
         }
 
@@ -43,25 +43,25 @@
             width: 200%;
             height: 200%;
             background:
-                radial-gradient(circle at 20% 50%, rgba(52, 152, 219, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(46, 204, 113, 0.12) 0%, transparent 50%),
-                radial-gradient(circle at 50% 80%, rgba(155, 89, 182, 0.10) 0%, transparent 50%);
+                radial-gradient(circle at 20% 50%, rgba(52, 152, 219, 0.03) 0%, transparent 40%),
+                radial-gradient(circle at 80% 20%, rgba(46, 204, 113, 0.02) 0%, transparent 40%),
+                radial-gradient(circle at 50% 80%, rgba(155, 89, 182, 0.015) 0%, transparent 40%);
             animation: bgShift 15s ease-in-out infinite alternate;
             z-index: 0;
         }
 
         @keyframes bgShift {
             0%   { transform: translate(0, 0) scale(1); }
-            50%  { transform: translate(-3%, 2%) scale(1.05); }
-            100% { transform: translate(2%, -1%) scale(1); }
+            50%  { transform: translate(-2%, 1%) scale(1.02); }
+            100% { transform: translate(1%, -1%) scale(1); }
         }
 
-        /* Floating orbs */
+        /* Floating orbs - reduced opacity for subtlety */
         .orb {
             position: absolute;
             border-radius: 50%;
             filter: blur(80px);
-            opacity: 0.4;
+            opacity: 0.08;
             z-index: 0;
         }
 
@@ -106,12 +106,17 @@
             max-width: 720px;
         }
 
-        .emoji-icon {
-            font-size: 4rem;
+        .logo-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 64px;
+            height: 64px;
+            background: rgba(79, 70, 229, 0.15);
+            color: #818cf8;
+            border-radius: 16px;
             margin-bottom: 1.5rem;
-            display: inline-block;
             animation: bounce 2s ease-in-out infinite;
-            position: relative;
         }
 
         .floating-symbol {
@@ -149,7 +154,7 @@
         .hero-subtitle {
             font-size: clamp(1rem, 2.5vw, 1.25rem);
             font-weight: 400;
-            color: rgba(255, 255, 255, 0.65);
+            color: #B8C0CC;
             line-height: 1.7;
             margin-bottom: 2.5rem;
             max-width: 560px;
@@ -224,32 +229,81 @@
             display: inline-flex;
             align-items: center;
             gap: 0.4rem;
-            padding: 0.55rem 1.1rem;
-            font-size: 0.85rem;
+            padding: 0.45rem 1rem;
+            font-size: 0.8rem;
             font-weight: 500;
-            color: rgba(255, 255, 255, 0.75);
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #AAB2C0;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 50px;
             backdrop-filter: blur(10px);
-            transition: background 0.2s, border-color 0.2s;
+            transition: background 0.2s, border-color 0.2s, color 0.2s;
         }
 
         .feature-pill:hover {
-            background: rgba(255, 255, 255, 0.12);
-            border-color: rgba(255, 255, 255, 0.2);
-            color: #fff;
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.85);
         }
 
-        /* ─── Footer ──────────────────────────────────────────────── */
         .footer {
             width: 100%;
             text-align: center;
             padding: 2rem 1rem 1.5rem;
             font-size: 0.8rem;
             color: rgba(255, 255, 255, 0.35);
-            background: #0a0e27;
+            background: #0F172A;
             letter-spacing: 0.02em;
+        }
+
+        /* ─── Top Nav ─────────────────────────────────────────────── */
+        .top-nav {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+        
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .login-link {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: color 0.2s;
+        }
+
+        .login-link:hover {
+            color: #fff;
+        }
+
+        .login-btn {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1.25rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: background 0.2s;
+        }
+
+        .login-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
         }
 
         /* ─── Responsive ──────────────────────────────────────────── */
@@ -272,6 +326,22 @@
 </head>
 
 <body>
+    <nav class="top-nav">
+        <a href="/" class="brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                <line x1="2" y1="10" x2="22" y2="10"></line>
+                <line x1="6" y1="16" x2="6.01" y2="16"></line>
+                <line x1="10" y1="16" x2="10.01" y2="16"></line>
+            </svg>
+            FinTrack
+        </a>
+        <div class="login-link">
+            <span style="display: none; @media(min-width: 640px){ display: inline; }">Already have an account?</span>
+            <a href="/auth/login/" class="login-link login-btn">Log in</a>
+        </div>
+    </nav>
+
     <section class="hero">
         <!-- Floating orbs -->
         <div class="orb orb-1"></div>
@@ -279,33 +349,36 @@
         <div class="orb orb-3"></div>
 
         <div class="hero-content">
-            <div class="emoji-icon">💰</div>
-            <h1 class="hero-title">Welcome to Personal Finance Tracker</h1>
+            <div class="logo-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                    <line x1="2" y1="10" x2="22" y2="10"></line>
+                    <line x1="6" y1="16" x2="6.01" y2="16"></line>
+                    <line x1="10" y1="16" x2="10.01" y2="16"></line>
+                </svg>
+            </div>
+            <h1 class="hero-title">Take control of your finances</h1>
             <p class="hero-subtitle">
-                Take control of your money. Track expenses, manage budgets
-                and unlock AI-powered insights — all in one beautiful place.
+                Track your spending, manage your budgets, and understand your money — all in one place.
             </p>
 
-            <a href="/auth/login/" class="cta-btn" id="get-started-btn">
-                Click here to get started
+            <a href="/auth/register/" class="cta-btn" id="get-started-btn">
+                Get Started
                 <span class="arrow">→</span>
             </a>
 
             <div class="features">
                 <span class="feature-pill">📊 Smart Dashboard</span>
-                <span class="feature-pill">💳 Expense Tracking</span>
-                <span class="feature-pill">🎯 Budget Goals</span>
-                <span class="feature-pill">🤖 AI Insights</span>
-                <span class="feature-pill">📈 Monthly Reports</span>
-                <span class="feature-pill">🔔 Anomaly Alerts</span>
-                <span class="feature-pill">⚠️ Overrun Notifications</span>
+                <span class="feature-pill">💳 Transaction Tracking</span>
+                <span class="feature-pill">🎯 Budget Management</span>
+                <span class="feature-pill">💡 Financial Insights</span>
             </div>
         </div>
 
     </section>
 
     <div class="footer">
-        &copy; 2026 Finance Tracker. Built with ❤️
+        &copy; 2026 FinTrack. Built with ❤️
     </div>
 </body>
 

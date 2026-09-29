@@ -5,15 +5,11 @@
 
 {% block extra_css %}
 <style>
-    .auth-wrapper {
-        max-width: 480px;
-        margin: 2.5rem auto;
-    }
     .auth-card {
         background: var(--card-bg);
         border: 1px solid var(--border);
         border-radius: var(--radius-lg);
-        padding: 2.5rem 2rem;
+        padding: 2rem;
         box-shadow: var(--shadow-md);
     }
     .auth-header {
@@ -21,10 +17,11 @@
         margin-bottom: 2rem;
     }
     .auth-header h2 {
-        font-size: 1.75rem;
+        font-size: 1.85rem;
         font-weight: 800;
         letter-spacing: -0.03em;
         margin: 0 0 0.5rem 0;
+        color: var(--text-main);
     }
     .auth-header p {
         color: var(--text-muted);
@@ -33,7 +30,7 @@
     }
     .auth-divider {
         text-align: center;
-        margin: 1.5rem 0;
+        margin: 1.25rem 0;
         position: relative;
     }
     .auth-divider::before {
@@ -79,7 +76,7 @@
     }
     .auth-footer {
         text-align: center;
-        margin-top: 1.5rem;
+        margin-top: 1.25rem;
         font-size: 0.9rem;
         color: var(--text-muted);
     }
@@ -95,11 +92,18 @@
 {% endblock %}
 
 {% block content %}
-<div class="auth-wrapper">
     <div class="auth-card">
-        <div class="auth-header">
-            <h2>Create Your Account</h2>
-            <p>Start tracking budgets, expenses, and insights today</p>
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; background: rgba(79, 70, 229, 0.1); color: var(--primary); border-radius: 12px; margin-bottom: 0.75rem;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                    <line x1="2" y1="10" x2="22" y2="10"></line>
+                    <line x1="6" y1="16" x2="6.01" y2="16"></line>
+                    <line x1="10" y1="16" x2="10.01" y2="16"></line>
+                </svg>
+            </div>
+            <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.25rem;">Create an Account</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">Start tracking budgets, expenses, and insights today</p>
         </div>
 
         <form method="post" novalidate>
@@ -144,5 +148,4 @@
             Already have an account? <a href="{% url 'core:login' %}">Log in instead</a>
         </div>
     </div>
-</div>
 {% endblock %}

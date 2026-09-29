@@ -1,462 +1,298 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% load static %}
 
-{% block title %}{{ report.month_name }} Report — Finance Tracker{% endblock %}
+{% block title %}Monthly Report — Finance Tracker{% endblock %}
 
 {% block extra_css %}
 <style>
-    .page-header {
+    .report-header {
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: flex-end;
         margin-bottom: 2rem;
         flex-wrap: wrap;
         gap: 1rem;
     }
-    .page-header h2 {
+    .report-title-area h2 {
         font-size: 1.8rem;
         font-weight: 800;
         letter-spacing: -0.03em;
-        margin: 0;
+        margin: 0 0 0.5rem 0;
+        color: var(--text-main);
     }
-    .month-badge {
-        background: rgba(79, 70, 229, 0.1);
-        color: var(--primary);
-        padding: 0.35rem 0.9rem;
-        border-radius: var(--radius-pill);
-        font-weight: 700;
-        font-size: 0.85rem;
-    }
-    .filter-card {
+    
+    .filters-bar {
         background: var(--card-bg);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        padding: 1.25rem 1.5rem;
-        margin-bottom: 2rem;
-        box-shadow: var(--shadow-sm);
-    }
-    .filter-form {
-        display: flex;
-        gap: 1.25rem;
-        align-items: flex-end;
-        flex-wrap: wrap;
-    }
-    .filter-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-    }
-    .filter-group label {
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--text-muted);
-    }
-    .filter-group select {
-        padding: 0.5rem 0.85rem;
         border: 1px solid var(--border);
         border-radius: var(--radius-md);
-        background: var(--card-bg);
-        font-family: inherit;
+        padding: 1rem 1.5rem;
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    .filters-bar form {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+    .filters-bar select {
+        padding: 0.5rem 2rem 0.5rem 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: #fff;
         font-size: 0.9rem;
         font-weight: 500;
-        color: var(--text-main);
-        outline: none;
-        transition: var(--transition);
+        cursor: pointer;
     }
-    .filter-group select:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
-    }
-    .stat-cards-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1.25rem;
-        margin-bottom: 2rem;
-    }
-    .metric-card {
-        background: var(--card-bg);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        box-shadow: var(--shadow-sm);
-        position: relative;
-        overflow: hidden;
-        transition: var(--transition);
-    }
-    .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
-    }
-    .metric-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-    }
-    .metric-income::before { background: var(--success); }
-    .metric-expense::before { background: var(--danger); }
-    .metric-investment::before { background: var(--warning); }
-    .metric-savings::before { background: var(--primary); }
-
-    .metric-label {
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--text-muted);
-        margin-bottom: 0.5rem;
-    }
-    .metric-value {
-        font-size: 1.6rem;
-        font-weight: 800;
-        letter-spacing: -0.02em;
-    }
-    .metric-income .metric-value { color: var(--success); }
-    .metric-expense .metric-value { color: var(--danger); }
-    .metric-investment .metric-value { color: var(--warning); }
-    .metric-savings .metric-value { color: var(--primary); }
-
-    .progress-track {
-        background: #f1f5f9;
-        border-radius: var(--radius-pill);
-        height: 8px;
-        overflow: hidden;
-        margin-bottom: 0.35rem;
-    }
-    .progress-fill {
-        height: 100%;
-        border-radius: var(--radius-pill);
-        transition: width 0.4s ease;
-    }
-    .status-pill {
-        display: inline-block;
-        padding: 0.2rem 0.55rem;
-        border-radius: var(--radius-pill);
-        font-size: 0.75rem;
+    
+    .section-divider {
+        margin: 2.5rem 0 1.5rem 0;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0.75rem;
+        font-size: 1.1rem;
         font-weight: 700;
-        letter-spacing: 0.03em;
+        color: var(--text-main);
     }
-    .status-ok { background: #dcfce7; color: #15803d; }
-    .status-warning { background: #fef3c7; color: #b45309; }
-    .status-overrun { background: #fee2e2; color: #b91c1c; }
+
+    @media print {
+        .sidebar, .topbar, .filters-bar, .mobile-menu-btn, .btn { display: none !important; }
+        .main-content { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+        .app-layout { display: block !important; }
+        .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
+        body { background: #fff !important; }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <div>
-        <h2>📅 Monthly Financial Report</h2>
-        <span style="color: var(--text-muted); font-size: 0.9rem;">Comprehensive monthly breakdown &amp; category analytics</span>
+<div class="report-header">
+    <div class="report-title-area">
+        <h2>Financial Report</h2>
+        <span style="color: var(--text-muted); font-size: 0.95rem; font-weight: 500;">
+            {{ report.month_name }} · {{ report.currency.code }}
+        </span>
     </div>
-    <span class="month-badge">{{ report.month_name }} • {{ report.currency.code }}</span>
+    <button onclick="window.print()" class="btn btn-secondary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem;"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+        Download PDF
+    </button>
 </div>
 
-<!-- ─── Month Selector ─────────────────────────────────────────── -->
-<div class="filter-card">
-    <form method="get" class="filter-form">
-        <div class="filter-group">
-            <label for="month">Month</label>
-            <select name="month" id="month">
-                {% for m in month_choices %}
-                <option value="{{ m.value }}" {{ m.selected }}>{{ m.label }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="filter-group">
-            <label for="year">Year</label>
-            <select name="year" id="year">
-                {% for y in year_choices %}
-                <option value="{{ y.value }}" {{ y.selected }}>{{ y.label }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary btn-sm" style="padding: 0.55rem 1.25rem;">Generate Report</button>
+<!-- Selector -->
+<div class="filters-bar">
+    <form method="get">
+        <select name="month">
+            {% for m in month_choices %}
+            <option value="{{ m.value }}" {{ m.selected }}>{{ m.label }}</option>
+            {% endfor %}
+        </select>
+        <select name="year">
+            {% for y in year_choices %}
+            <option value="{{ y.value }}" {{ y.selected }}>{{ y.label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1rem;">Generate Report</button>
     </form>
 </div>
 
-<!-- ─── Key Metrics ────────────────────────────────────────────── -->
-<div class="stat-cards-grid">
-    <div class="metric-card metric-income">
-        <div class="metric-label">Income</div>
-        <div class="metric-value">{{ report.currency.symbol }}{{ report.income }}</div>
+<!-- Key Metrics -->
+<div class="grid grid-4" style="margin-bottom: 2.5rem;">
+    <div class="card" style="padding: 1.25rem; margin-bottom: 0;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Income</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: var(--success);">{{ report.currency.symbol }}{{ report.income }}</div>
     </div>
-    <div class="metric-card metric-expense">
-        <div class="metric-label">Expenses</div>
-        <div class="metric-value">{{ report.currency.symbol }}{{ report.expense }}</div>
+    <div class="card" style="padding: 1.25rem; margin-bottom: 0;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Expenses</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: var(--danger);">{{ report.currency.symbol }}{{ report.expense }}</div>
     </div>
-    <div class="metric-card metric-investment">
-        <div class="metric-label">Investments</div>
-        <div class="metric-value">{{ report.currency.symbol }}{{ report.investment }}</div>
+    <div class="card" style="padding: 1.25rem; margin-bottom: 0;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Investments</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: var(--warning);">{{ report.currency.symbol }}{{ report.investment }}</div>
     </div>
-    <div class="metric-card metric-savings">
-        <div class="metric-label">Net Savings</div>
-        <div class="metric-value">{{ report.currency.symbol }}{{ report.savings }}</div>
-    </div>
-</div>
-
-<!-- ─── Charts ─────────────────────────────────────────────────── -->
-<div class="grid grid-3" style="margin-bottom: 2rem;">
-    <div class="card">
-        <h2>Expense Breakdown</h2>
-        {% if report.expense_breakdown %}
-        <div style="position: relative; max-height: 240px;">
-            <canvas id="expenseChart" height="220"></canvas>
-        </div>
-        {% else %}
-        <div style="text-align: center; color: var(--text-muted); padding: 3rem 1rem;">No expenses recorded this month.</div>
-        {% endif %}
-    </div>
-    <div class="card">
-        <h2>Income Breakdown</h2>
-        {% if report.income_breakdown %}
-        <div style="position: relative; max-height: 240px;">
-            <canvas id="incomeChart" height="220"></canvas>
-        </div>
-        {% else %}
-        <div style="text-align: center; color: var(--text-muted); padding: 3rem 1rem;">No income recorded this month.</div>
-        {% endif %}
-    </div>
-    <div class="card">
-        <h2>Investment Breakdown</h2>
-        {% if report.investment_breakdown %}
-        <div style="position: relative; max-height: 240px;">
-            <canvas id="investChart" height="220"></canvas>
-        </div>
-        {% else %}
-        <div style="text-align: center; color: var(--text-muted); padding: 3rem 1rem;">No investments recorded this month.</div>
-        {% endif %}
+    <div class="card" style="padding: 1.25rem; margin-bottom: 0; background: #EEF2FF; border-color: #c7d2fe;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 0.5rem;">Net Savings</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: var(--primary);">{{ report.currency.symbol }}{{ report.savings }}</div>
     </div>
 </div>
 
-<!-- ─── Category Tables ────────────────────────────────────────── -->
-<div class="grid grid-2" style="margin-bottom: 2rem;">
-    <!-- Expense Table -->
-    <div class="card">
-        <h2 style="color: var(--danger);">Expenses by Category</h2>
-        {% if report.expense_breakdown %}
-        <div style="overflow-x: auto;">
-            <table>
-                <thead>
-                    <tr><th>Category</th><th style="text-align: right;">Amount</th></tr>
-                </thead>
-                <tbody>
-                    {% for c in report.expense_breakdown %}
-                    <tr>
-                        <td style="font-weight: 600;">{{ c.category }}</td>
-                        <td style="text-align: right; font-weight: 700; color: var(--danger);">{{ report.currency.symbol }}{{ c.total }}</td>
-                    </tr>
-                    {% endfor %}
-                    <tr style="font-weight: 800; background: #f8fafc; border-top: 2px solid var(--border);">
-                        <td>Total Expenses</td>
-                        <td style="text-align: right; color: var(--danger);">{{ report.currency.symbol }}{{ report.expense }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <p style="color: var(--text-muted); padding: 1.5rem; text-align: center;">No expenses recorded.</p>
-        {% endif %}
-    </div>
+<div class="section-divider">Financial Performance</div>
 
-    <!-- Income Table -->
-    <div class="card">
-        <h2 style="color: var(--success);">Income by Category</h2>
-        {% if report.income_breakdown %}
-        <div style="overflow-x: auto;">
-            <table>
-                <thead>
-                    <tr><th>Category</th><th style="text-align: right;">Amount</th></tr>
-                </thead>
-                <tbody>
-                    {% for c in report.income_breakdown %}
-                    <tr>
-                        <td style="font-weight: 600;">{{ c.category }}</td>
-                        <td style="text-align: right; font-weight: 700; color: var(--success);">{{ report.currency.symbol }}{{ c.total }}</td>
-                    </tr>
-                    {% endfor %}
-                    <tr style="font-weight: 800; background: #f8fafc; border-top: 2px solid var(--border);">
-                        <td>Total Income</td>
-                        <td style="text-align: right; color: var(--success);">{{ report.currency.symbol }}{{ report.income }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <p style="color: var(--text-muted); padding: 1.5rem; text-align: center;">No income recorded.</p>
-        {% endif %}
+<!-- Financial Performance Chart -->
+<div class="card" style="margin-bottom: 2.5rem;">
+    <h3 class="card-title">Income vs Expenses</h3>
+    <div style="height: 300px; position: relative;">
+        <canvas id="monthlyBarChart"></canvas>
     </div>
 </div>
 
-<!-- ─── Investment Table ───────────────────────────────────────── -->
-{% if report.investment_breakdown %}
-<div class="card" style="margin-bottom: 2rem;">
-    <h2 style="color: var(--warning);">Investments by Category</h2>
-    <div style="overflow-x: auto;">
-        <table>
-            <thead>
-                <tr><th>Category</th><th style="text-align: right;">Amount</th></tr>
-            </thead>
-            <tbody>
-                {% for c in report.investment_breakdown %}
-                <tr>
-                    <td style="font-weight: 600;">{{ c.category }}</td>
-                    <td style="text-align: right; font-weight: 700; color: var(--warning);">{{ report.currency.symbol }}{{ c.total }}</td>
-                </tr>
+<div class="section-divider">Spending Analysis</div>
+
+<div class="dashboard-charts" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 2.5rem;">
+    <!-- Spending Donut -->
+    <div class="card" style="margin-bottom: 0;">
+        <h3 class="card-title">Spending Breakdown</h3>
+        <div style="height: 300px; position: relative; display: flex; align-items: center; justify-content: center;">
+            <canvas id="categoryChart" style="position: relative; z-index: 2;"></canvas>
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 1;">
+                <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);">{{ report.currency.symbol }}{{ report.expense }}</div>
+                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Spent</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Categories -->
+    <div class="card" style="margin-bottom: 0;">
+        <h3 class="card-title">Top Spending Categories</h3>
+        <div style="display: flex; flex-direction: column; justify-content: center; height: 100%;">
+            {% if report.expense_breakdown %}
+                {% for item in report.expense_breakdown|slice:":5" %}
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border);">
+                    <div style="font-weight: 600; color: var(--text-main);">{{ item.category }}</div>
+                    <div style="font-weight: 700; color: var(--text-main);">
+                        {{ report.currency.symbol }}{{ item.total }}
+                    </div>
+                </div>
                 {% endfor %}
-                <tr style="font-weight: 800; background: #f8fafc; border-top: 2px solid var(--border);">
-                    <td>Total Investments</td>
-                    <td style="text-align: right; color: var(--warning);">{{ report.currency.symbol }}{{ report.investment }}</td>
-                </tr>
-            </tbody>
-        </table>
+            {% else %}
+                <div style="color: var(--text-muted); font-size: 0.9rem;">No spending data available.</div>
+            {% endif %}
+        </div>
     </div>
 </div>
-{% endif %}
 
-<!-- ─── Budget Status ──────────────────────────────────────────── -->
-{% if report.budget_status %}
-<div class="card">
-    <h2>🎯 Budget Performance</h2>
-    <div style="overflow-x: auto;">
-        <table>
-            <thead>
-                <tr>
-                    <th>Category</th>
-                    <th>Limit</th>
-                    <th>Spent</th>
-                    <th style="min-width: 150px;">Progress</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for b in report.budget_status %}
-                <tr>
-                    <td style="font-weight: 600;">{{ b.category }}</td>
-                    <td>{{ report.currency.symbol }}{{ b.limit }}</td>
-                    <td style="font-weight: 600;">{{ report.currency.symbol }}{{ b.spent }}</td>
-                    <td>
-                        <div class="progress-track">
-                            <div class="progress-fill" style="width: {% if b.percentage > 100 %}100{% else %}{{ b.percentage }}{% endif %}%; background: {% if b.is_overrun %}var(--danger){% elif b.percentage > 80 %}var(--warning){% else %}var(--success){% endif %};"></div>
-                        </div>
-                        <small style="color: var(--text-muted); font-weight: 600;">{{ b.percentage }}% utilized</small>
-                    </td>
-                    <td>
-                        {% if b.is_overrun %}
-                        <span class="status-pill status-overrun">OVERRUN</span>
-                        {% elif b.percentage > 80 %}
-                        <span class="status-pill status-warning">WARNING</span>
-                        {% else %}
-                        <span class="status-pill status-ok">ON TRACK</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+<style>
+    @media (min-width: 1024px) {
+        .dashboard-charts { grid-template-columns: 1.2fr 1.2fr !important; }
+    }
+</style>
+
+<div class="grid grid-2">
+    <!-- Budget Performance -->
+    <div>
+        <div class="section-divider" style="margin-top: 0;">Budget Performance</div>
+        <div class="card">
+            {% for alert in report.budget_status %}
+            <div style="margin-bottom: 1.25rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; align-items: flex-end;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">{{ alert.category }}</strong>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">
+                        <span style="font-weight: 600; color: var(--text-main);">{{ report.currency.symbol }}{{ alert.spent }}</span> / {{ report.currency.symbol }}{{ alert.limit }}
+                        <span style="margin-left: 0.5rem; font-weight: 700; {% if alert.percentage >= 90 %}color: var(--danger);{% elif alert.percentage >= 75 %}color: var(--warning);{% else %}color: var(--success);{% endif %}">{{ alert.percentage|floatformat:0 }}%</span>
+                    </div>
+                </div>
+                <div style="height: 8px; background: var(--bg-main); border-radius: 4px; overflow: hidden;">
+                    <div style="height: 100%; width: {{ alert.percentage }}%; max-width: 100%; border-radius: 4px; background: {% if alert.percentage >= 90 %}var(--danger){% elif alert.percentage >= 75 %}var(--warning){% else %}var(--success){% endif %};"></div>
+                </div>
+            </div>
+            {% empty %}
+            <div style="color: var(--text-muted); font-size: 0.9rem;">No active budgets.</div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Savings -->
+    <div>
+        <div class="section-divider" style="margin-top: 0;">Savings</div>
+        <div class="card" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; height: 150px;">
+            <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Savings Rate</div>
+            <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary);">{{ report.savings_rate|floatformat:1 }}%</div>
+        </div>
     </div>
 </div>
-{% endif %}
+
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    Chart.register(ChartDataLabels);
+document.addEventListener('DOMContentLoaded', function() {
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = '#6B7280';
 
-    const palette = [
-        '#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6', '#10b981',
-        '#f97316', '#06b6d4', '#6366f1', '#ec4899', '#14b8a6'
-    ];
-
-    const doughnutOpts = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { position: 'bottom', labels: { boxWidth: 10, font: { family: 'Inter', size: 11, weight: '500' } } },
-            datalabels: {
-                color: '#ffffff',
-                font: { family: 'Inter', weight: '700', size: 11 },
-                formatter: function(value, ctx) {
-                    var sum = ctx.dataset.data.reduce(function(a, b) { return a + b; }, 0);
-                    return sum > 0 ? ((value / sum) * 100).toFixed(0) + '%' : '0%';
-                },
-                display: function(ctx) {
-                    var sum = ctx.dataset.data.reduce(function(a, b) { return a + b; }, 0);
-                    return sum > 0 && (ctx.dataset.data[ctx.dataIndex] / sum) > 0.05;
+    // Monthly Bar Chart (Single Month Comparison)
+    const barCtx = document.getElementById('monthlyBarChart');
+    if(barCtx) {
+        new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: ['{{ report.month_name }}'],
+                datasets: [
+                    {
+                        label: 'Income',
+                        data: [{{ report.income|default:0|stringformat:"f" }}],
+                        backgroundColor: '#10B981',
+                        borderRadius: 4,
+                        barPercentage: 0.4
+                    },
+                    {
+                        label: 'Expenses',
+                        data: [{{ report.expense|default:0|stringformat:"f" }}],
+                        backgroundColor: '#EF4444',
+                        borderRadius: 4,
+                        barPercentage: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } },
+                scales: {
+                    y: { beginAtZero: true, grid: { borderDash: [4, 4], color: '#E3E7EF' }, border: { display: false } },
+                    x: { grid: { display: false }, border: { display: false } }
                 }
             }
-        },
-        cutout: '55%'
-    };
+        });
+    }
 
-    // ─── Expense Chart ────────────────────────────────────────────
-    const expCtx = document.getElementById('expenseChart');
-    if (expCtx) {
-        const cats = {{ expense_cats_json|safe }};
-        const vals = {{ expense_vals_json|safe }};
-        if (cats.length > 0) {
-            new Chart(expCtx, {
+    // Spending Donut Chart
+    const catCtx = document.getElementById('categoryChart');
+    if(catCtx) {
+        const labels = {{ expense_cats_json|safe|default:"[]" }};
+        const data = {{ expense_vals_json|safe|default:"[]" }};
+        if(labels.length > 0) {
+            new Chart(catCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: cats,
+                    labels: labels,
                     datasets: [{
-                        data: vals,
-                        backgroundColor: palette.slice(0, cats.length),
-                        borderWidth: 2,
-                        borderColor: '#ffffff'
+                        data: data,
+                        backgroundColor: [
+                            '#4F46E5', '#3B82F6', '#0EA5E9', '#06B6D4', '#14B8A6',
+                            '#10B981', '#84CC16', '#EAB308', '#F59E0B', '#F97316'
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 4
                     }]
                 },
-                options: doughnutOpts
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 6, font: { size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) { label += ': '; }
+                                    if (context.parsed !== null) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const pct = Math.round((context.parsed / total) * 100);
+                                        label += '{{ report.currency.symbol }}' + context.parsed + ' (' + pct + '%)';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
             });
         }
     }
-
-    // ─── Income Chart ─────────────────────────────────────────────
-    const incCtx = document.getElementById('incomeChart');
-    if (incCtx) {
-        const cats2 = {{ income_cats_json|safe }};
-        const vals2 = {{ income_vals_json|safe }};
-        if (cats2.length > 0) {
-            new Chart(incCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: cats2,
-                    datasets: [{
-                        data: vals2,
-                        backgroundColor: palette.slice(0, cats2.length),
-                        borderWidth: 2,
-                        borderColor: '#ffffff'
-                    }]
-                },
-                options: doughnutOpts
-            });
-        }
-    }
-
-    // ─── Investment Chart ─────────────────────────────────────────
-    const invCtx = document.getElementById('investChart');
-    if (invCtx) {
-        const cats3 = {{ invest_cats_json|safe }};
-        const vals3 = {{ invest_vals_json|safe }};
-        if (cats3.length > 0) {
-            new Chart(invCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: cats3,
-                    datasets: [{
-                        data: vals3,
-                        backgroundColor: palette.slice(0, cats3.length),
-                        borderWidth: 2,
-                        borderColor: '#ffffff'
-                    }]
-                },
-                options: doughnutOpts
-            });
-        }
-    }
+});
 </script>
 {% endblock %}

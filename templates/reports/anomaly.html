@@ -2,229 +2,102 @@
 
 {% block title %}Anomaly Detection — Finance Tracker{% endblock %}
 
-{% block extra_css %}
-<style>
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2rem;
-    }
-    .page-header h2 {
-        font-size: 1.8rem;
-        font-weight: 800;
-        letter-spacing: -0.03em;
-        margin: 0;
-    }
-    .page-header .currency-info {
-        color: var(--text-muted);
-        font-size: 0.9rem;
-        font-weight: 500;
-    }
-    .alert-banner {
-        border-radius: var(--radius-lg);
-        padding: 1.5rem 2rem;
-        margin-bottom: 2rem;
-        display: flex;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-    .alert-warning-banner {
-        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-        border: 1px solid #fcd34d;
-    }
-    .alert-success-banner {
-        background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-        border: 1px solid #6ee7b7;
-    }
-    .alert-banner .alert-icon { font-size: 1.5rem; flex-shrink: 0; }
-    .alert-banner strong { display: block; font-size: 1.05rem; margin-bottom: 0.25rem; }
-    .alert-banner p { margin: 0; font-size: 0.9rem; color: var(--text-muted); }
-
-    .signal-cards {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        margin-bottom: 2rem;
-    }
-    .signal-card {
-        background: var(--card-bg);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        padding: 1rem 1.25rem;
-        flex: 1;
-        min-width: 140px;
-        text-align: center;
-        transition: var(--transition);
-    }
-    .signal-card:hover {
-        box-shadow: var(--shadow-md);
-        transform: translateY(-2px);
-    }
-    .signal-card .signal-count {
-        font-size: 1.8rem;
-        font-weight: 800;
-        letter-spacing: -0.03em;
-    }
-    .signal-card .signal-label {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-top: 0.25rem;
-    }
-    .signal-mad { color: #b91c1c; }
-    .signal-zscore { color: var(--danger); }
-    .signal-iqr { color: #ea580c; }
-    .signal-round { color: #7c3aed; }
-    .signal-freq { color: var(--info); }
-    .signal-vel { color: #0d9488; }
-
-    .risk-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0.25rem 0.6rem;
-        border-radius: 6px;
-        font-weight: 800;
-        font-size: 0.85rem;
-        min-width: 40px;
-    }
-    .risk-high { background: var(--danger); color: #fff; }
-    .risk-medium { background: #ea580c; color: #fff; }
-    .risk-low { background: #eab308; color: #1f2937; }
-
-    .signal-pill {
-        display: inline-block;
-        padding: 0.15rem 0.5rem;
-        border-radius: var(--radius-pill);
-        font-size: 0.75rem;
-        font-weight: 700;
-        margin: 0.1rem;
-        color: #fff;
-    }
-    .pill-mad { background: #b91c1c; }
-    .pill-zscore { background: var(--danger); }
-    .pill-iqr { background: #ea580c; }
-    .pill-round { background: #7c3aed; }
-    .pill-freq { background: var(--info); }
-    .pill-vel { background: #0d9488; }
-
-    .deviation-badge {
-        display: inline-block;
-        padding: 0.15rem 0.5rem;
-        border-radius: var(--radius-pill);
-        font-size: 0.8rem;
-        font-weight: 700;
-        background: #fef2f2;
-        color: var(--danger);
-    }
-    .anomaly-row-high { background: rgba(239, 68, 68, 0.04); }
-    .anomaly-row-medium { background: rgba(234, 88, 12, 0.04); }
-    .anomaly-row-low { background: rgba(234, 179, 8, 0.04); }
-    .status-analyzed { color: var(--success); font-weight: 600; font-size: 0.85rem; }
-    .status-insufficient { color: var(--warning); font-weight: 500; font-size: 0.85rem; }
-
-    .info-footer {
-        margin-top: 2rem;
-        padding: 1.5rem 2rem;
-        background: var(--card-bg);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        font-size: 0.85rem;
-        color: var(--text-muted);
-    }
-    .info-footer strong { color: var(--text-main); }
-    .info-footer ol {
-        margin: 0.75rem 0 0;
-        padding-left: 1.2rem;
-        line-height: 1.8;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="page-header">
-    <h2>🔍 Anomaly Detection</h2>
-    <span class="currency-info">Analysis in {{ preferred_currency.code }}</span>
-</div>
-
-{% if total_flagged > 0 %}
-<!-- Warning Banner -->
-<div class="alert-banner alert-warning-banner">
-    <span class="alert-icon">⚠️</span>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
     <div>
-        <strong>{{ total_flagged }} suspicious transaction{{ total_flagged|pluralize }} flagged</strong>
-        <p>Six detection signals analysed: MAD robust outlier, Z-Score, IQR outlier, round-number pattern, frequency spike &amp; velocity clustering.</p>
+        <h2 style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.25rem;">Anomaly Detection</h2>
+        <span style="color: var(--text-muted); font-size: 0.95rem;">Analysis in {{ preferred_currency.code }}</span>
     </div>
 </div>
 
-<!-- Signal Summary Cards -->
-<div class="signal-cards">
-    <div class="signal-card">
-        <div class="signal-count signal-mad">{{ detection_summary.mad }}</div>
-        <div class="signal-label">MAD Outlier</div>
+<div class="card" style="margin-bottom: 2rem; padding: 0; overflow: hidden;">
+    <div style="padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 1rem; background: {% if high_risk_count > 0 %}rgba(239, 68, 68, 0.05){% elif review_count > 0 %}rgba(245, 158, 11, 0.05){% else %}rgba(16, 185, 129, 0.05){% endif %};">
+        {% if high_risk_count > 0 %}
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <div>
+            <strong style="color: var(--danger); display: block; font-size: 1.05rem; margin-bottom: 0.15rem;">{{ high_risk_count }} high-risk anomal{{ high_risk_count|pluralize:"y,ies" }} detected</strong>
+            <p style="color: var(--text-muted); margin: 0; font-size: 0.9rem;">Immediate review recommended.</p>
+        </div>
+        {% elif review_count > 0 %}
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <div>
+            <strong style="color: var(--warning); display: block; font-size: 1.05rem; margin-bottom: 0.15rem;">{{ review_count }} transaction{{ review_count|pluralize }} require{{ review_count|pluralize:"s," }} review</strong>
+            <p style="color: var(--text-muted); margin: 0; font-size: 0.9rem;">No high-risk anomalies, but some unusual patterns found.</p>
+        </div>
+        {% else %}
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+        <div>
+            <strong style="color: var(--success); display: block; font-size: 1.05rem; margin-bottom: 0.15rem;">✓ No high-risk anomalies detected</strong>
+            <p style="color: var(--text-muted); margin: 0; font-size: 0.9rem;">All transactions passed analysis safely.</p>
+        </div>
+        {% endif %}
     </div>
-    <div class="signal-card">
-        <div class="signal-count signal-zscore">{{ detection_summary.zscore }}</div>
-        <div class="signal-label">Z-Score (&gt;2σ)</div>
-    </div>
-    <div class="signal-card">
-        <div class="signal-count signal-iqr">{{ detection_summary.iqr }}</div>
-        <div class="signal-label">IQR Outlier</div>
-    </div>
-    <div class="signal-card">
-        <div class="signal-count signal-round">{{ detection_summary.round_number }}</div>
-        <div class="signal-label">Round Number</div>
-    </div>
-    <div class="signal-card">
-        <div class="signal-count signal-freq">{{ detection_summary.frequency }}</div>
-        <div class="signal-label">Frequency Spike</div>
-    </div>
-    <div class="signal-card">
-        <div class="signal-count signal-vel">{{ detection_summary.velocity }}</div>
-        <div class="signal-label">Velocity</div>
+    
+    <div style="padding: 1.5rem;">
+        <h3 style="font-size: 1.05rem; margin-bottom: 1rem; color: var(--text-main);">Risk Overview</h3>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">{{ total_analyzed }} total transactions analyzed</p>
+        <div class="grid grid-3" style="gap: 1rem;">
+            <div style="border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; text-align: center; background: #fff;">
+                <div style="font-size: 1.5rem; font-weight: 800; color: var(--success);">{{ normal_count }}</div>
+                <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Normal</div>
+            </div>
+            <div style="border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; text-align: center; background: #fff;">
+                <div style="font-size: 1.5rem; font-weight: 800; color: var(--warning);">{{ review_count }}</div>
+                <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Review</div>
+            </div>
+            <div style="border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; text-align: center; background: #fff;">
+                <div style="font-size: 1.5rem; font-weight: 800; color: var(--danger);">{{ high_risk_count }}</div>
+                <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">High Risk</div>
+            </div>
+        </div>
     </div>
 </div>
-{% else %}
-<!-- Success Banner -->
-<div class="alert-banner alert-success-banner">
-    <span class="alert-icon">✅</span>
-    <div>
-        <strong>No anomalies detected</strong>
-        <p>All transactions passed 6-signal analysis. No suspicious patterns found.</p>
-    </div>
-</div>
-{% endif %}
 
 {% if anomalies %}
 <div class="card" style="margin-bottom: 2rem;">
-    <h2 style="color: var(--danger);">🚩 Flagged Transactions (by Risk Score)</h2>
+    <h2 class="card-title">Flagged Transactions (by Risk Score)</h2>
     <div style="overflow-x: auto;">
-        <table>
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead>
-                <tr><th>Risk</th><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Avg (Median)</th><th>Deviation</th><th>Signals</th></tr>
+                <tr style="border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                    <th style="padding: 1rem 0;">Risk</th>
+                    <th style="padding: 1rem 0;">Date</th>
+                    <th style="padding: 1rem 0;">Category</th>
+                    <th style="padding: 1rem 0;">Triggered Rules</th>
+                    <th style="padding: 1rem 0; text-align: right;">Amount</th>
+                    <th style="padding: 1rem 0; text-align: right;">Deviation</th>
+                </tr>
             </thead>
             <tbody>
                 {% for a in anomalies %}
-                <tr class="{% if a.risk_score >= 60 %}anomaly-row-high{% elif a.risk_score >= 35 %}anomaly-row-medium{% else %}anomaly-row-low{% endif %}">
-                    <td>
-                        <span class="risk-badge {% if a.risk_score >= 60 %}risk-high{% elif a.risk_score >= 35 %}risk-medium{% else %}risk-low{% endif %}">{{ a.risk_score }}</span>
+                <tr style="border-bottom: 1px solid var(--border); {% if a.risk_score >= 60 %}background: rgba(239, 68, 68, 0.03);{% elif a.risk_score >= 35 %}background: rgba(245, 158, 11, 0.03);{% endif %}">
+                    <td style="padding: 1rem 0;">
+                        <span style="display: inline-flex; align-items: center; justify-content: center; padding: 0.25rem 0.6rem; border-radius: var(--radius-pill); font-weight: 700; font-size: 0.8rem; background: {% if a.risk_score >= 60 %}var(--danger){% elif a.risk_score >= 35 %}var(--warning){% else %}#eab308{% endif %}; color: #fff;">{{ a.risk_score }}</span>
                     </td>
-                    <td>{{ a.tx.date|date:"M d, Y" }}</td>
-                    <td style="font-weight: 600;">{{ a.category }}</td>
-                    <td>{{ a.tx.description|truncatewords:5|default:"—" }}</td>
-                    <td style="font-weight: 700; color: var(--danger);">{{ preferred_currency.symbol }}{{ a.converted_amount }}</td>
-                    <td style="color: var(--text-muted);">{{ preferred_currency.symbol }}{{ a.mean }} ({{ preferred_currency.symbol }}{{ a.median }})</td>
-                    <td><span class="deviation-badge">+{{ a.deviation_pct }}%</span></td>
-                    <td>
-                        {% if a.signals.mad %}<span class="signal-pill pill-mad">MAD:{{ a.signals.mad }}</span>{% endif %}
-                        {% if a.signals.zscore %}<span class="signal-pill pill-zscore">Z:{{ a.signals.zscore }}σ</span>{% endif %}
-                        {% if a.signals.iqr %}<span class="signal-pill pill-iqr">IQR</span>{% endif %}
-                        {% if a.signals.round_number %}<span class="signal-pill pill-round">Round</span>{% endif %}
-                        {% if a.signals.frequency %}<span class="signal-pill pill-freq">Freq:{{ a.signals.frequency }}</span>{% endif %}
-                        {% if a.signals.velocity %}<span class="signal-pill pill-vel">Vel:{{ a.signals.velocity }}</span>{% endif %}
+                    <td style="padding: 1rem 0; font-weight: 500;">{{ a.tx.date|date:"M d, Y" }}</td>
+                    <td style="padding: 1rem 0;">
+                        <div style="font-weight: 600; color: var(--text-main);">{{ a.category }}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">{{ a.tx.description|truncatewords:4|default:"—" }}</div>
+                    </td>
+                    <td style="padding: 1rem 0; font-size: 0.85rem;">
+                        <ul style="margin: 0; padding-left: 1.2rem; color: var(--text-muted);">
+                            {% for signal, val in a.signals.items %}
+                                {% if signal == 'zscore' %}<li>Z-Score ({{ val }})</li>
+                                {% elif signal == 'mad' %}<li>MAD Outlier</li>
+                                {% elif signal == 'iqr' %}<li>IQR Outlier</li>
+                                {% elif signal == 'round_number' %}<li>Round Number</li>
+                                {% elif signal == 'frequency' %}<li>Freq Spike</li>
+                                {% elif signal == 'velocity' %}<li>Velocity ({{ val }}x)</li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </td>
+                    <td style="padding: 1rem 0; font-weight: 700; color: {% if a.risk_score >= 60 %}var(--danger){% else %}var(--warning){% endif %}; text-align: right;">
+                        {{ preferred_currency.symbol }}{{ a.converted_amount }}
+                        <div style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted); margin-top: 0.2rem;">Avg: {{ preferred_currency.symbol }}{{ a.mean }}</div>
+                    </td>
+                    <td style="padding: 1rem 0; text-align: right;">
+                        <span style="display: inline-block; padding: 0.2rem 0.5rem; border-radius: var(--radius-pill); font-size: 0.8rem; font-weight: 600; background: {% if a.risk_score >= 60 %}#fef2f2{% else %}#fffbeb{% endif %}; color: {% if a.risk_score >= 60 %}var(--danger){% else %}var(--warning){% endif %};">+{{ a.deviation_pct }}%</span>
                     </td>
                 </tr>
                 {% endfor %}
@@ -234,44 +107,45 @@
 </div>
 {% endif %}
 
-<div class="card">
-    <h2>📊 Category Statistics</h2>
-    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem; margin-top: -0.5rem;">Per-category statistical thresholds: MAD (modified Z &gt; 3.5), Z-Score (mean + 2σ) and IQR (Q3 + 1.5 × IQR).</p>
-    <div style="overflow-x: auto;">
-        <table>
-            <thead>
-                <tr><th>Category</th><th>Count</th><th>Mean (Median)</th><th>MAD</th><th>MAD-Threshold</th><th>Z-Threshold</th><th>IQR-Threshold</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-                {% for s in category_stats %}
-                <tr>
-                    <td style="font-weight: 600;">{{ s.category }}</td>
-                    <td>{{ s.count }}</td>
-                    <td>{{ preferred_currency.symbol }}{{ s.mean }} <span style="color: var(--text-muted); font-size: 0.8rem;">({{ preferred_currency.symbol }}{{ s.median }})</span></td>
-                    <td>{{ preferred_currency.symbol }}{{ s.mad }}</td>
-                    <td>{% if s.threshold_mad %}{{ preferred_currency.symbol }}{{ s.threshold_mad }}{% else %}—{% endif %}</td>
-                    <td>{% if s.threshold_zscore %}{{ preferred_currency.symbol }}{{ s.threshold_zscore }}{% else %}—{% endif %}</td>
-                    <td>{% if s.threshold_iqr %}{{ preferred_currency.symbol }}{{ s.threshold_iqr }}{% else %}—{% endif %}</td>
-                    <td>{% if s.note %}<span class="status-insufficient">{{ s.note }}</span>{% else %}<span class="status-analyzed">✓ Analyzed</span>{% endif %}</td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-muted);">No expense transactions found. Add some transactions to see anomaly analysis.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+<!-- Educational details hidden by default via HTML details element -->
+<details class="card" style="margin-bottom: 2rem; padding: 1.5rem; cursor: pointer;">
+    <summary style="font-weight: 700; font-size: 1.05rem; color: var(--text-main); outline: none;">How detection works (Under the Hood)</summary>
+    <div style="margin-top: 1.5rem; cursor: default;">
+        <h3 style="font-size: 1rem; margin-bottom: 1rem; color: var(--text-main);">Category Averages</h3>
+        <div style="overflow-x: auto; margin-bottom: 2rem;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border); color: var(--text-muted);">
+                        <th style="padding: 0.75rem 0;">Category</th>
+                        <th style="padding: 0.75rem 0;">Transactions</th>
+                        <th style="padding: 0.75rem 0;">Average Spend</th>
+                        <th style="padding: 0.75rem 0;">Typical Range (±1σ)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in category_stats %}
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 0.75rem 0; font-weight: 500;">{{ s.category }}</td>
+                        <td style="padding: 0.75rem 0;">{{ s.count }}</td>
+                        <td style="padding: 0.75rem 0;">{{ preferred_currency.symbol }}{{ s.mean }}</td>
+                        <td style="padding: 0.75rem 0; color: var(--text-muted);">±{{ preferred_currency.symbol }}{{ s.std_dev }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">No statistical data.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <h3 style="font-size: 1rem; margin-bottom: 0.5rem; color: var(--text-main);">Multi-Signal Detection Engine</h3>
+        <ol style="color: var(--text-muted); font-size: 0.9rem; margin-left: 1.5rem; line-height: 1.6;">
+            <li><strong>MAD (Median Absolute Deviation)</strong> — flags if modified Z-score &gt; 3.5</li>
+            <li><strong>Z-Score</strong> — flags if amount &gt; mean + 2σ</li>
+            <li><strong>IQR Outlier</strong> — flags if amount &gt; Q3 + 1.5 × IQR</li>
+            <li><strong>Round Number</strong> — flags suspiciously round amounts</li>
+            <li><strong>Frequency Spike</strong> — flags if day has 3× more transactions than average</li>
+            <li><strong>Velocity</strong> — flags 4+ same-category transactions on same day</li>
+        </ol>
     </div>
-</div>
-
-<div class="info-footer">
-    <strong>Multi-Signal Detection Engine:</strong>
-    <ol>
-        <li><strong>MAD (Median Absolute Deviation)</strong> — flags if Boris Iglewicz &amp; David Hoaglin modified Z-score &gt; 3.5 (highly robust to extreme spending skew)</li>
-        <li><strong>Z-Score</strong> — flags if amount &gt; mean + 2σ (statistical outlier in category)</li>
-        <li><strong>IQR Outlier</strong> — flags if amount &gt; Q3 + 1.5 × IQR (robust, resists skewed data)</li>
-        <li><strong>Round Number</strong> — flags suspiciously round amounts (₹500, ₹1000, etc.)</li>
-        <li><strong>Frequency Spike</strong> — flags if the day has 3× more transactions than the daily average</li>
-        <li><strong>Velocity</strong> — flags 2+ same-category transactions on the same day</li>
-    </ol>
-    <p style="margin: 0.75rem 0 0;">Each transaction receives a <strong>composite risk score (0–100)</strong> based on how many signals it triggers. Higher scores indicate more suspicious activity.</p>
-</div>
+</details>
 {% endblock %}

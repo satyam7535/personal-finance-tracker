@@ -838,7 +838,11 @@ services:
 pip install -r requirements.txt
 python manage.py collectstatic --no-input
 python manage.py migrate
+
+# Seed currencies (critical for app to work)
 python manage.py seed_currencies
+
+# Configure Site domain and Google OAuth SocialApp
 python manage.py configure_site
 ```
 

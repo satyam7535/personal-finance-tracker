@@ -1,96 +1,87 @@
 {% extends 'base.html' %}
 
-{% block title %}Profile & Preferences — Finance Tracker{% endblock %}
-
-{% block extra_css %}
-<style>
-    .profile-container {
-        max-width: 640px;
-        margin: 2rem auto;
-    }
-    .profile-card {
-        background: var(--card-bg);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        padding: 2.25rem 2rem;
-        box-shadow: var(--shadow-sm);
-    }
-    .profile-header {
-        margin-bottom: 2rem;
-        padding-bottom: 1.25rem;
-        border-bottom: 1px solid var(--border);
-    }
-    .profile-header h2 {
-        font-size: 1.8rem;
-        font-weight: 800;
-        letter-spacing: -0.03em;
-        margin: 0 0 0.35rem 0;
-    }
-    .profile-header p {
-        color: var(--text-muted);
-        font-size: 0.9rem;
-        margin: 0;
-    }
-    .section-title {
-        font-size: 1rem;
-        font-weight: 700;
-        color: var(--text-main);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin: 1.75rem 0 1rem 0;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-</style>
-{% endblock %}
+{% block title %}Account Settings — Finance Tracker{% endblock %}
 
 {% block content %}
-<div class="profile-container">
-    <div class="profile-card">
-        <div class="profile-header">
-            <h2>👤 Account Settings</h2>
-            <p>Manage your account profile and display preferences</p>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div>
+        <h2 style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.25rem;">Account Settings</h2>
+        <span style="color: var(--text-muted); font-size: 0.95rem;">Manage your profile and preferences</span>
+    </div>
+</div>
+
+<div style="max-width: 680px;">
+    <form method="post" novalidate>
+        {% csrf_token %}
+        
+        <!-- Account Info Card -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">Profile Information</h3>
+            <div style="display: grid; gap: 1.25rem;">
+                {% for field in user_form %}
+                <div class="form-group" style="margin: 0;">
+                    <label for="{{ field.id_for_label }}" style="font-size: 0.85rem; font-weight: 600; color: var(--text-main); display: block; margin-bottom: 0.4rem;">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}
+                    <div style="color: var(--danger); font-size: 0.85rem; font-weight: 500; margin-top: 0.25rem;">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
         </div>
 
-        <form method="post" novalidate>
+        <!-- Preferences Card -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">Financial Preferences</h3>
+            <div style="display: grid; gap: 1.25rem;">
+                {% for field in profile_form %}
+                <div class="form-group" style="margin: 0;">
+                    <label for="{{ field.id_for_label }}" style="font-size: 0.85rem; font-weight: 600; color: var(--text-main); display: block; margin-bottom: 0.4rem;">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                    <div style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.35rem;">{{ field.help_text }}</div>
+                    {% endif %}
+                    {% for error in field.errors %}
+                    <div style="color: var(--danger); font-size: 0.85rem; font-weight: 500; margin-top: 0.25rem;">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem;">
+            <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2rem;">Save Changes</button>
+        </div>
+    </form>
+    
+    <!-- Account & Security Card -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">Account & Security</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Sign out of your account on this device.</p>
+        <form action="{% url 'core:logout' %}" method="post">
             {% csrf_token %}
-
-            <div class="section-title">
-                <span>Account Information</span>
-            </div>
-            {% for field in user_form %}
-            <div class="form-group">
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
-                {% for error in field.errors %}
-                <ul class="errorlist">
-                    <li>{{ error }}</li>
-                </ul>
-                {% endfor %}
-            </div>
-            {% endfor %}
-
-            <div class="section-title">
-                <span>Financial Preferences</span>
-            </div>
-            {% for field in profile_form %}
-            <div class="form-group">
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
-                {% if field.help_text %}
-                <small class="helptext">{{ field.help_text }}</small>
-                {% endif %}
-                {% for error in field.errors %}
-                <ul class="errorlist">
-                    <li>{{ error }}</li>
-                </ul>
-                {% endfor %}
-            </div>
-            {% endfor %}
-
-            <button type="submit" class="btn btn-primary" style="margin-top: 1rem; padding: 0.65rem 1.5rem;">Save Settings</button>
+            <button type="submit" class="btn btn-secondary" style="color: var(--text-main);">Log Out</button>
         </form>
     </div>
 </div>
+
+<style>
+    /* Quick fixes for generated Django inputs */
+    input[type="text"], input[type="email"], select {
+        width: 100%;
+        padding: 0.65rem 0.8rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-family: inherit;
+        font-size: 0.95rem;
+        color: var(--text-main);
+        background: #fff;
+        transition: var(--transition);
+        outline: none;
+    }
+    input[type="text"]:focus, input[type="email"]:focus, select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+</style>
 {% endblock %}

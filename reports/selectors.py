@@ -210,6 +210,7 @@ def get_monthly_report(user, year, month):
     expense, _ = get_total_expense(user, first_day, end)
     investment, _ = get_total_investment(user, first_day, end)
     savings = income - expense - investment
+    savings_rate = (savings / income * 100).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP) if income > 0 else Decimal('0.0')
 
     expense_bkdn, _ = get_category_breakdown(user, 'EXPENSE', first_day, end)
     income_bkdn, _ = get_category_breakdown(user, 'INCOME', first_day, end)
@@ -258,6 +259,7 @@ def get_monthly_report(user, year, month):
         'expense': expense,
         'investment': investment,
         'savings': savings,
+        'savings_rate': savings_rate,
         'expense_breakdown': expense_bkdn,
         'income_breakdown': income_bkdn,
         'investment_breakdown': investment_bkdn,
@@ -331,14 +333,16 @@ def get_dashboard_summary(user):
         pct = (spent / b.limit_amount * 100).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP) if b.limit_amount > 0 else Decimal('0.0')
         is_overrun = spent > b.limit_amount
         
-        if pct >= 80:
-            budget_alerts.append({
-                'category': b.category.name,
-                'limit': b.limit_amount,
-                'spent': spent,
-                'percentage': pct,
-                'is_overrun': is_overrun,
-            })
+        budget_alerts.append({
+            'category': b.category.name,
+            'limit': b.limit_amount,
+            'spent': spent,
+            'percentage': pct,
+            'is_overrun': is_overrun,
+        })
+    
+    # Sort by percentage used (descending)
+    budget_alerts.sort(key=lambda x: x['percentage'], reverse=True)
 
     return {
         'income': income,

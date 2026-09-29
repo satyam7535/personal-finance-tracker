@@ -5,421 +5,183 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Finance Tracker{% endblock %}</title>
-    <!-- Add Google Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        /* ─── Variables & Base ─────────────────────────────────────────── */
-        :root {
-            --bg-gradient: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-            --card-bg: rgba(255, 255, 255, 0.95);
-            --nav-bg: rgba(17, 24, 39, 0.98);
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --info: #3b82f6;
-            --text-main: #1f2937;
-            --text-muted: #6b7280;
-            --border: rgba(229, 231, 235, 0.8);
-            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            --radius-md: 12px;
-            --radius-lg: 16px;
-            --radius-pill: 9999px;
-            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        *, *::before, *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: var(--bg-gradient);
-            color: var(--text-main);
-            line-height: 1.6;
-            min-height: 100vh;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* ─── Nav ──────────────────────────────────────────────────── */
-        nav {
-            background: var(--nav-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 0 5%;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        nav .brand {
-            color: #fff;
-            font-size: 1.3rem;
-            font-weight: 800;
-            text-decoration: none;
-            padding: 1rem 0;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            letter-spacing: -0.03em;
-        }
-
-        nav .links {
-            display: flex;
-            gap: 0.25rem;
-        }
-
-        nav .links a {
-            color: #d1d5db;
-            text-decoration: none;
-            padding: 0.6rem 1.1rem;
-            font-size: 0.9rem;
-            font-weight: 500;
-            border-radius: var(--radius-md);
-            transition: var(--transition);
-        }
-
-        nav .links a:hover, nav .links a.active {
-            color: #fff;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        nav .user-info {
-            color: #9ca3af;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        nav .user-info a {
-            color: #f3f4f6;
-            text-decoration: none;
-            font-weight: 600;
-            transition: var(--transition);
-        }
-        nav .user-info a:hover {
-            color: var(--danger);
-        }
-
-        /* ─── Container ────────────────────────────────────────────── */
-        .container {
-            max-width: 1200px;
-            margin: 2.5rem auto;
-            padding: 0 1.5rem;
-            animation: fadeIn 0.4s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* ─── Messages ─────────────────────────────────────────────── */
-        .messages {
-            list-style: none;
-            margin-bottom: 2rem;
-        }
-
-        .messages li {
-            padding: 1rem 1.5rem;
-            border-radius: var(--radius-md);
-            margin-bottom: 0.75rem;
-            font-size: 0.95rem;
-            font-weight: 500;
-            box-shadow: var(--shadow-sm);
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-15px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        .messages .success { background: #ecfdf5; color: #065f46; border-left: 4px solid var(--success); }
-        .messages .error { background: #fef2f2; color: #991b1b; border-left: 4px solid var(--danger); }
-        .messages .warning { background: #fffbeb; color: #92400e; border-left: 4px solid var(--warning); }
-        .messages .info { background: #eff6ff; color: #1e40af; border-left: 4px solid var(--info); }
-
-        /* ─── Cards ────────────────────────────────────────────────── */
-        .card {
-            background: var(--card-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-md);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            transition: var(--transition);
-        }
-        .card:hover {
-            box-shadow: var(--shadow-lg);
-        }
-
-        .card h2 {
-            margin-bottom: 1.5rem;
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--text-main);
-            letter-spacing: -0.02em;
-        }
-
-        /* ─── Forms ────────────────────────────────────────────────── */
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: var(--text-main);
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            font-size: 0.95rem;
-            font-family: inherit;
-            background: #fff;
-            transition: var(--transition);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
-        }
-
-        .form-group textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        .form-group .helptext {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 0.4rem;
-        }
-
-        .form-group .errorlist {
-            list-style: none;
-            color: var(--danger);
-            font-size: 0.85rem;
-            margin-top: 0.4rem;
-            font-weight: 500;
-        }
-
-        /* ─── Buttons ──────────────────────────────────────────────── */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            padding: 0.65rem 1.5rem;
-            border: none;
-            border-radius: var(--radius-md);
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            transition: var(--transition);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-        
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        .btn-primary { background: var(--primary); color: #fff; }
-        .btn-primary:hover { background: var(--primary-hover); }
-        .btn-success { background: var(--success); color: #fff; }
-        .btn-danger { background: var(--danger); color: #fff; }
-        .btn-secondary { background: #6b7280; color: #fff; }
-
-        .btn-sm {
-            padding: 0.4rem 1rem;
-            font-size: 0.85rem;
-            border-radius: 8px;
-        }
-
-        /* ─── Tables ───────────────────────────────────────────────── */
-        table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-        }
-
-        th, td {
-            padding: 1.1rem 1rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border);
-        }
-
-        th {
-            background: rgba(249, 250, 251, 0.6);
-            font-weight: 600;
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        
-        tr:last-child td {
-            border-bottom: none;
-        }
-        
-        tr:hover td {
-            background: rgba(249, 250, 251, 0.8);
-        }
-
-        /* ─── Grid ─────────────────────────────────────────────────── */
-        .grid { display: grid; gap: 1.5rem; }
-        .grid-2 { grid-template-columns: repeat(2, 1fr); }
-        .grid-3 { grid-template-columns: repeat(3, 1fr); }
-        .grid-4 { grid-template-columns: repeat(4, 1fr); }
-
-        @media (max-width: 768px) {
-            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
-            nav { flex-direction: column; padding: 1rem; gap: 1rem; }
-            nav .links { flex-wrap: wrap; justify-content: center; }
-        }
-
-        /* ─── Summary Cards ────────────────────────────────────────── */
-        .stat-card {
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            padding-top: 2.5rem;
-        }
-        
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: var(--text-muted);
-        }
-
-        .stat-card.income::before { background: var(--success); }
-        .stat-card.expense::before { background: var(--danger); }
-        .stat-card.savings::before { background: var(--info); }
-        .stat-card.investment::before { background: var(--warning); }
-
-        .stat-card .stat-value {
-            font-size: 2.2rem;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            margin-top: 0.5rem;
-        }
-
-        .stat-card .stat-label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-
-        .stat-card.income .stat-value { color: var(--success); }
-        .stat-card.expense .stat-value { color: var(--danger); }
-        .stat-card.savings .stat-value { color: var(--info); }
-        .stat-card.investment .stat-value { color: var(--warning); }
-
-        /* ─── Auth pages ───────────────────────────────────────────── */
-        .auth-container {
-            max-width: 440px;
-            margin: 5rem auto;
-        }
-
-        /* ─── Notification badge ───────────────────────────────────── */
-        .nav-notif { position: relative; }
-        .notif-badge {
-            position: absolute;
-            top: 4px;
-            right: 0px;
-            background: var(--danger);
-            color: #fff;
-            font-size: 0.65rem;
-            font-weight: 700;
-            border-radius: var(--radius-pill);
-            padding: 0.1rem 0.4rem;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 0 2px var(--nav-bg);
-            transform: translate(50%, -50%);
-        }
-    </style>
+    <!-- Google Font: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="{% load static %}{% static 'css/style.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
 
 <body>
-    <nav>
-        <a href="{% url 'reports:dashboard' %}" class="brand">💰 Finance Tracker</a>
-        <div class="links">
-            {% if user.is_authenticated %}
-            <a href="{% url 'reports:dashboard' %}">Dashboard</a>
-            <a href="{% url 'finance:transaction_list' %}">Transactions</a>
-            <a href="{% url 'finance:category_list' %}">Categories</a>
-            <a href="{% url 'finance:budget_list' %}">Budgets</a>
-            <a href="{% url 'reports:monthly_report' %}">Reports</a>
-            <a href="{% url 'reports:anomaly' %}">Anomalies</a>
-            <a href="{% url 'reports:ai_insights' %}">AI Insights</a>
-            <a href="{% url 'finance:import_statement' %}">Import</a>
-            {% include "includes/nav_notifications.html" %}
+    {% if not user.is_authenticated %}
+    <div class="auth-layout" style="width: 100%; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg-main); padding: 1rem;">
+        <div style="width: 100%; max-width: 440px;">
+            {% if messages %}
+            <ul class="messages" style="list-style: none; padding: 0; margin-bottom: 1rem;">
+                {% for message in messages %}
+                <li class="{{ message.tags }}" style="padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 0.5rem; background: var(--card-bg); border-left: 4px solid var(--primary);">{{ message }}</li>
+                {% endfor %}
+            </ul>
             {% endif %}
-        </div>
-        <div class="user-info">
-            {% if user.is_authenticated %}
-            {{ user.username }} |
-            <a href="{% url 'core:profile' %}">Profile</a> |
-            <a href="{% url 'core:logout' %}">Logout</a>
-            {% else %}
-            <a href="{% url 'core:login' %}" style="color: #3498db;">Login</a>
-            <a href="{% url 'core:register' %}" style="color: #27ae60;">Register</a>
-            {% endif %}
-        </div>
-    </nav>
+    {% else %}
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
+                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                    <line x1="2" y1="10" x2="22" y2="10"></line>
+                    <line x1="6" y1="16" x2="6.01" y2="16"></line>
+                    <line x1="10" y1="16" x2="10.01" y2="16"></line>
+                </svg>
+                FinTrack
+            </div>
+            
+            <nav class="sidebar-nav">
+                {% if user.is_authenticated %}
+                <div class="nav-section">
+                    <div class="nav-section-title">Overview</div>
+                    <a href="{% url 'reports:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+                        Dashboard
+                    </a>
+                </div>
 
-    <div class="container">
-        {% if messages %}
-        <ul class="messages">
-            {% for message in messages %}
-            <li class="{{ message.tags }}">{{ message }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
+                <div class="nav-section">
+                    <div class="nav-section-title">Money</div>
+                    <a href="{% url 'finance:transaction_list' %}" class="nav-link {% if 'transaction' in request.resolver_match.url_name %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                        Transactions
+                    </a>
+                    <a href="{% url 'finance:budget_list' %}" class="nav-link {% if 'budget' in request.resolver_match.url_name %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        Budgets
+                    </a>
+                    <a href="{% url 'finance:category_list' %}" class="nav-link {% if 'category' in request.resolver_match.url_name %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                        Categories
+                    </a>
+                </div>
 
-        {% block content %}{% endblock %}
+                <div class="nav-section">
+                    <div class="nav-section-title">Analytics</div>
+                    <a href="{% url 'reports:monthly_report' %}" class="nav-link {% if 'monthly_report' in request.resolver_match.url_name %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        Reports
+                    </a>
+                    <a href="{% url 'reports:ai_insights' %}" class="nav-link {% if 'insights' in request.resolver_match.url_name %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                        Financial Insights
+                    </a>
+                    <a href="{% url 'reports:anomaly' %}" class="nav-link {% if 'anomaly' in request.resolver_match.url_name %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        Anomaly Detection
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Tools</div>
+                    <a href="{% url 'finance:import_statement' %}" class="nav-link {% if 'import' in request.resolver_match.url_name %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        Import Statement
+                    </a>
+                </div>
+                {% endif %}
+            </nav>
+
+            <div class="sidebar-footer" style="padding: 1rem; border-top: 1px solid var(--border); margin-top: auto; background: var(--card-bg);">
+                {% if user.is_authenticated %}
+                <a href="{% url 'core:profile' %}" class="user-profile">
+                    <div class="user-avatar">
+                        {{ user.username|make_list|first|upper }}
+                    </div>
+                    <div class="user-details">
+                        <span class="user-name">{{ user.username }}</span>
+                        <span class="user-settings">Settings</span>
+                    </div>
+                </a>
+                {% else %}
+                <a href="{% url 'core:login' %}" class="nav-link" style="color: var(--primary); font-weight: 600;">Login</a>
+                <a href="{% url 'core:register' %}" class="nav-link">Register</a>
+                {% endif %}
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Topbar -->
+            <header class="topbar">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <!-- Page specific title can be injected here if needed, but normally empty -->
+                </div>
+                
+                <div class="topbar-actions" style="display: flex; align-items: center; gap: 1.25rem; margin-left: auto;">
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'finance:transaction_create' %}" class="btn btn-primary" style="padding: 0.4rem 0.85rem; font-size: 0.85rem; border-radius: var(--radius-pill); box-shadow: var(--shadow-sm);">+ Add Transaction</a>
+                    <a href="{% url 'finance:notification_list' %}" class="icon-btn" aria-label="Notifications">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                        <!-- Only show dot if unread, here we hardcode for demo, but normally check unread_count -->
+                        <span class="badge-dot"></span>
+                    </a>
+                    <div class="currency-selector" style="font-size: 0.95rem; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 0.25rem;">
+                        <span>₹</span>
+                        {% if request.user.profile.preferred_currency %}
+                            {{ request.user.profile.preferred_currency }}
+                        {% else %}
+                            INR
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <div class="content-container">
+                {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                    <li class="{{ message.tags }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+    {% endif %}
+
+                {% block content %}{% endblock %}
+
+    {% if not user.is_authenticated %}
+        </div>
     </div>
+    {% else %}
+            </div>
+        </main>
+        
+    </div>
+    {% endif %}
 
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+        
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(event) {
+            const sidebar = document.getElementById('sidebar');
+            const mobileBtn = document.querySelector('.mobile-menu-btn');
+            
+            if (window.innerWidth <= 768) {
+                if (!sidebar.contains(event.target) && !mobileBtn.contains(event.target) && sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
+                }
+            }
+        });
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
-
 </html>

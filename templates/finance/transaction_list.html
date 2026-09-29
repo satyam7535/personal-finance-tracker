@@ -2,98 +2,52 @@
 
 {% block title %}Transactions — Finance Tracker{% endblock %}
 
-{% block extra_css %}
-<style>
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2rem;
-    }
-    .page-header h2 {
-        font-size: 1.8rem;
-        font-weight: 800;
-        letter-spacing: -0.03em;
-        margin: 0;
-    }
-    .filter-bar {
-        display: flex;
-        gap: 1rem;
-        align-items: flex-end;
-        flex-wrap: wrap;
-    }
-    .filter-bar .form-group {
-        margin-bottom: 0;
-        min-width: 140px;
-    }
-    .type-badge {
-        padding: 0.25rem 0.6rem;
-        border-radius: var(--radius-pill);
-        font-size: 0.75rem;
-        font-weight: 700;
-        letter-spacing: 0.03em;
-    }
-    .type-badge-income { background: #ecfdf5; color: #065f46; }
-    .type-badge-expense { background: #fef2f2; color: #991b1b; }
-    .type-badge-investment { background: #fffbeb; color: #92400e; }
-    .tx-link {
-        color: var(--text-main);
-        text-decoration: none;
-        font-weight: 500;
-        transition: var(--transition);
-    }
-    .tx-link:hover { color: var(--primary); }
-    .amount-income { color: var(--success); font-weight: 700; }
-    .amount-expense { color: var(--danger); font-weight: 700; }
-    .amount-investment { color: var(--warning); font-weight: 700; }
-    .converted-col { color: var(--text-muted); font-size: 0.9rem; }
-    .receipt-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.3rem;
-        padding: 0.25rem 0.6rem;
-        background: rgba(79, 70, 229, 0.08);
-        color: var(--primary);
-        border-radius: 6px;
-        text-decoration: none;
-        font-size: 0.8rem;
-        font-weight: 600;
-        transition: var(--transition);
-    }
-    .receipt-link:hover { background: rgba(79, 70, 229, 0.15); }
-    .action-group {
-        display: flex;
-        gap: 0.4rem;
-    }
-    .empty-state {
-        text-align: center;
-        padding: 4rem 2rem;
-        color: var(--text-muted);
-    }
-    .empty-state p { margin-bottom: 1rem; font-size: 1.1rem; }
-    .empty-state a { color: var(--primary); font-weight: 600; text-decoration: none; }
-    .empty-state a:hover { text-decoration: underline; }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="page-header">
-    <h2>Transactions</h2>
-    <a href="{% url 'finance:transaction_create' %}" class="btn btn-success">+ Add Transaction</a>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div>
+        <h2 style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.25rem;">Transactions</h2>
+        <span style="color: var(--text-muted); font-size: 0.95rem;">Manage your income and expenses</span>
+    </div>
+    <a href="{% url 'finance:transaction_create' %}" class="btn btn-primary">+ Add Transaction</a>
 </div>
 
 <!-- Filters -->
-<div class="card" style="margin-bottom: 2rem;">
-    <form method="get" class="filter-bar">
-        {% for field in filter_form %}
-        <div class="form-group">
-            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
+<div class="card" style="padding: 1.25rem 1.5rem; margin-bottom: 2rem;">
+    <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        Search transactions
+    </div>
+    <form method="get">
+        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <div style="width: 160px;">
+                {{ filter_form.type }}
+            </div>
+            <div style="width: 160px;">
+                {{ filter_form.category }}
+            </div>
+            
+            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('more-filters').style.display = document.getElementById('more-filters').style.display === 'none' ? 'flex' : 'none';" style="padding: 0.5rem 1rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border);">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.25rem;"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+                More Filters
+            </button>
+            
+            <button type="submit" class="btn btn-primary btn-sm" style="padding: 0.5rem 1rem;">Apply</button>
+            <a href="{% url 'finance:transaction_list' %}" style="display: inline-flex; align-items: center; font-size: 0.85rem; color: var(--text-muted); text-decoration: none; padding: 0.5rem;">Clear</a>
         </div>
-        {% endfor %}
-        <div style="display: flex; gap: 0.5rem;">
-            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
-            <a href="{% url 'finance:transaction_list' %}" class="btn btn-secondary btn-sm">Clear</a>
+        
+        <div id="more-filters" style="display: {% if filter_form.date_from.value or filter_form.date_to.value %}flex{% else %}none{% endif %}; gap: 1.5rem; margin-top: 1rem; align-items: center; padding-top: 1rem; border-top: 1px dashed var(--border);">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">From</span>
+                <div style="width: 140px;">
+                    {{ filter_form.date_from }}
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">To</span>
+                <div style="width: 140px;">
+                    {{ filter_form.date_to }}
+                </div>
+            </div>
         </div>
     </form>
 </div>
@@ -102,54 +56,44 @@
 <div class="card">
     {% if transactions %}
     <div style="overflow-x: auto;">
-    <table>
+    <table style="width: 100%; border-collapse: collapse; text-align: left;">
         <thead>
-            <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Category</th>
-                <th>Description</th>
-                <th>Amount</th>
-                <th>In {{ preferred_currency.code }}</th>
-                <th>Receipt</th>
-                <th>Actions</th>
+            <tr style="border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                <th style="padding: 1rem 0; font-weight: 600;">Date</th>
+                <th style="padding: 1rem 0; font-weight: 600;">Type</th>
+                <th style="padding: 1rem 0; font-weight: 600;">Category</th>
+                <th style="padding: 1rem 0; font-weight: 600;">Description</th>
+                <th style="padding: 1rem 0; font-weight: 600; text-align: right;">Amount</th>
+                <th style="padding: 1rem 0; font-weight: 600; text-align: center;">Receipt</th>
+                <th style="padding: 1rem 0; font-weight: 600; text-align: right;">Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for item in transactions %}
-            <tr>
-                <td>
-                    <a href="{% url 'finance:transaction_detail' item.tx.pk %}" class="tx-link">{{ item.tx.date|date:"M d, Y" }}</a>
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 1rem 0;">
+                    <a href="{% url 'finance:transaction_detail' item.tx.pk %}" style="color: var(--text-main); font-weight: 500; text-decoration: none;">{{ item.tx.date|date:"M d, Y" }}</a>
                 </td>
-                <td>
-                    <span class="type-badge {% if item.tx.type == 'INCOME' %}type-badge-income{% elif item.tx.type == 'EXPENSE' %}type-badge-expense{% else %}type-badge-investment{% endif %}">
+                <td style="padding: 1rem 0;">
+                    <span class="badge {% if item.tx.type == 'INCOME' %}badge-success{% elif item.tx.type == 'EXPENSE' %}badge-danger{% else %}badge-warning{% endif %}">
                         {{ item.tx.get_type_display }}
                     </span>
                 </td>
-                <td>{{ item.tx.category.name }}</td>
-                <td>{{ item.tx.description|truncatewords:8|default:"—" }}</td>
-                <td class="{% if item.tx.type == 'INCOME' %}amount-income{% elif item.tx.type == 'EXPENSE' %}amount-expense{% else %}amount-investment{% endif %}">
-                    {{ item.tx.currency.symbol }}{{ item.tx.amount }}
+                <td style="padding: 1rem 0; font-weight: 500; color: var(--text-main);">{{ item.tx.category.name }}</td>
+                <td style="padding: 1rem 0; color: var(--text-muted); font-size: 0.95rem;">{{ item.tx.description|truncatewords:6|default:"—" }}</td>
+                <td style="padding: 1rem 0; text-align: right; font-weight: 700; color: {% if item.tx.type == 'INCOME' %}var(--success){% elif item.tx.type == 'EXPENSE' %}var(--danger){% else %}var(--warning){% endif %};">
+                    {% if item.tx.type == 'INCOME' %}+{% else %}-{% endif %}{{ item.tx.currency.symbol }}{{ item.tx.amount }}
                 </td>
-                <td class="converted-col">
-                    {% if item.tx.currency.code != preferred_currency.code %}
-                    {{ preferred_currency.symbol }}{{ item.converted }}
-                    {% else %}
-                    —
-                    {% endif %}
-                </td>
-                <td>
+                <td style="padding: 1rem 0; text-align: center;">
                     {% if item.tx.receipt %}
-                    <a href="{% url 'finance:transaction_receipt_download' item.tx.pk %}" target="_blank" class="receipt-link">📎 View</a>
+                    <a href="{% url 'finance:transaction_receipt_download' item.tx.pk %}" target="_blank" style="color: var(--primary); font-size: 0.85rem; font-weight: 600; text-decoration: none;">View</a>
                     {% else %}
-                    <span style="color: var(--text-muted);">—</span>
+                    <span style="color: var(--border);">—</span>
                     {% endif %}
                 </td>
-                <td>
-                    <div class="action-group">
-                        <a href="{% url 'finance:transaction_edit' item.tx.pk %}" class="btn btn-primary btn-sm">Edit</a>
-                        <a href="{% url 'finance:transaction_delete' item.tx.pk %}" class="btn btn-danger btn-sm">Delete</a>
-                    </div>
+                <td style="padding: 1rem 0; text-align: right;">
+                    <a href="{% url 'finance:transaction_edit' item.tx.pk %}" style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; text-decoration: none; margin-right: 0.75rem;">Edit</a>
+                    <a href="{% url 'finance:transaction_delete' item.tx.pk %}" style="color: var(--danger); font-size: 0.85rem; font-weight: 500; text-decoration: none;">Delete</a>
                 </td>
             </tr>
             {% endfor %}
@@ -157,10 +101,87 @@
     </table>
     </div>
     {% else %}
-    <div class="empty-state">
-        <p>📄 No transactions found.</p>
-        <a href="{% url 'finance:transaction_create' %}">Add your first transaction</a>
+    <div style="text-align: center; padding: 4rem 2rem; color: var(--text-muted);">
+        <p style="margin-bottom: 1rem; font-size: 1.1rem;">No transactions found.</p>
+        <a href="{% url 'finance:transaction_create' %}" style="color: var(--primary); font-weight: 600; text-decoration: none;">Add your first transaction</a>
     </div>
     {% endif %}
 </div>
+
+<style>
+    /* Scoped form resets for filter bar */
+    .card form select, .card form input {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-family: inherit;
+        font-size: 0.9rem;
+        background: var(--bg-main);
+        outline: none;
+    }
+    .card form select:focus, .card form input:focus {
+        border-color: var(--primary);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const typeSelect = document.getElementById('id_type');
+    const categorySelect = document.getElementById('id_category');
+    
+    if (typeSelect && categorySelect) {
+        // Store all original category options in memory
+        const allCategories = Array.from(categorySelect.options).map(opt => ({
+            value: opt.value,
+            text: opt.text,
+            selected: opt.selected
+        }));
+        
+        function filterCategories() {
+            const selectedType = typeSelect.value.toLowerCase();
+            const currentSelectedCategoryValue = categorySelect.value;
+            
+            // Clear current options
+            categorySelect.innerHTML = '';
+            
+            let isCurrentSelectionValid = false;
+            
+            // Re-populate matching options
+            allCategories.forEach(opt => {
+                if (!selectedType || opt.value === '') {
+                    // If 'All Types' is selected, or it's the 'All Categories' blank option, show it
+                    const newOpt = new Option(opt.text, opt.value, opt.selected, opt.selected);
+                    categorySelect.add(newOpt);
+                    if (currentSelectedCategoryValue === opt.value) {
+                        isCurrentSelectionValid = true;
+                    }
+                } else if (opt.text.toLowerCase().includes('(' + selectedType + ')')) {
+                    // If the category matches the selected type (e.g. "(expense)" matches "expense")
+                    const newOpt = new Option(opt.text, opt.value, opt.selected, opt.selected);
+                    categorySelect.add(newOpt);
+                    if (currentSelectedCategoryValue === opt.value) {
+                        isCurrentSelectionValid = true;
+                    }
+                }
+            });
+            
+            // Restore previous category selection if it is still valid in the new list
+            if (isCurrentSelectionValid) {
+                categorySelect.value = currentSelectedCategoryValue;
+            } else {
+                categorySelect.value = '';
+            }
+        }
+        
+        // Listen for changes on the Type dropdown
+        typeSelect.addEventListener('change', filterCategories);
+        
+        // Run once on page load to sync UI if a type is already selected
+        filterCategories();
+    }
+});
+</script>
 {% endblock %}
