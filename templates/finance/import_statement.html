@@ -2,86 +2,174 @@
 
 {% block title %}Import Bank Statement — Finance Tracker{% endblock %}
 
+{% block extra_css %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    .page-header h2 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        margin: 0;
+    }
+    .upload-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        box-shadow: var(--shadow-sm);
+        max-width: 680px;
+    }
+    .upload-card h3 {
+        margin: 0 0 1.25rem 0;
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+    .format-guide {
+        margin-top: 2rem;
+        padding: 1.25rem 1.5rem;
+        background: #f8fafc;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+    .format-guide pre {
+        margin: 0.75rem 0;
+        background: #e2e8f0;
+        color: #0f172a;
+        padding: 0.75rem 1rem;
+        border-radius: var(--radius-sm);
+        font-family: monospace;
+        font-size: 0.85rem;
+        overflow-x: auto;
+    }
+    .metrics-bar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    .metric-chip {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 1.25rem 1rem;
+        text-align: center;
+        box-shadow: var(--shadow-sm);
+    }
+    .metric-chip-val {
+        font-size: 1.6rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+    }
+    .metric-chip-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        letter-spacing: 0.05em;
+        margin-top: 0.25rem;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 0.2rem 0.55rem;
+        border-radius: var(--radius-pill);
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+    .badge-ready { background: #dcfce7; color: #15803d; }
+    .badge-auto { background: #fef3c7; color: #b45309; }
+    .badge-dup { background: #fee2e2; color: #b91c1c; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-    <h2>📄 Import Bank Statement</h2>
-    <a href="{% url 'finance:transaction_list' %}" class="btn" style="background:#6c757d;">← Back to Transactions</a>
+<div class="page-header">
+    <div>
+        <h2>📄 Import Bank Statement</h2>
+        <span style="color: var(--text-muted); font-size: 0.9rem;">Bulk import transactions from CSV or PDF statements</span>
+    </div>
+    <a href="{% url 'finance:transaction_list' %}" class="btn btn-secondary btn-sm">← Back to Transactions</a>
 </div>
 
 {% if step == 'upload' %}
 <!-- Upload Form -->
-<div class="card" style="max-width:600px;">
-    <h3 style="margin-bottom:1rem;">Upload CSV or PDF File</h3>
+<div class="upload-card">
+    <h3>Upload CSV or PDF File</h3>
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {% for field in form %}
-        <div style="margin-bottom:1rem;">
-            <label style="display:block; margin-bottom:0.3rem; font-weight:600;">{{ field.label }}</label>
+        <div class="form-group">
+            <label>{{ field.label }}</label>
             {{ field }}
             {% if field.help_text %}
-            <small style="color:#777; display:block; margin-top:0.2rem;">{{ field.help_text }}</small>
+            <small style="color: var(--text-muted); display: block; margin-top: 0.35rem;">{{ field.help_text }}</small>
             {% endif %}
             {% for error in field.errors %}
-            <small style="color:#e74c3c; display:block;">{{ error }}</small>
+            <small style="color: var(--danger); display: block; font-weight: 600; margin-top: 0.25rem;">{{ error }}</small>
             {% endfor %}
         </div>
         {% endfor %}
-        <button type="submit" class="btn">📤 Upload & Preview</button>
+        <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem;">📤 Upload &amp; Preview Statement</button>
     </form>
 
-    <div style="margin-top:1.5rem; padding:1rem; background:#f8f9fa; border-radius:8px; font-size:0.85rem; color:#666;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-            <strong>Expected CSV format:</strong>
-            <a href="{% url 'finance:download_sample_csv' %}" class="btn"
-                style="background:#17a2b8; font-size:0.8rem; padding:0.3rem 0.8rem;">⬇ Download Sample CSV</a>
+    <div class="format-guide">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+            <strong style="color: var(--text-main);">Standard CSV Structure:</strong>
+            <a href="{% url 'finance:download_sample_csv' %}" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 0.3rem 0.75rem;">⬇ Download Sample CSV</a>
         </div>
-        <pre style="margin:0.5rem 0; background:#e9ecef; padding:0.5rem; border-radius:4px; overflow-x:auto;">date,description,amount
+        <pre>date,description,amount
 2026-01-15,Grocery Store,45.99
 2026-01-16,Salary Deposit,5000.00
 2026-01-17,Netflix Subscription,15.99</pre>
-        <p style="margin:0.5rem 0 0;">Also supports <code>debit</code>/<code>credit</code> columns instead of
-            <code>amount</code>.</p>
-        <p style="margin:0.5rem 0 0;"><strong>PDF files:</strong> Tables with date, description, and amount columns will
-            be automatically extracted.</p>
+        <p style="margin: 0.5rem 0 0;">Supports unified <code>amount</code> or split <code>debit</code> / <code>credit</code> columns. Dates are parsed in standard ISO (YYYY-MM-DD) or common formats.</p>
+        <p style="margin: 0.35rem 0 0;"><strong>PDF Statements:</strong> Tables with Date, Description, and Amount columns are automatically extracted using document analysis.</p>
     </div>
 </div>
 
 {% elif step == 'preview' %}
 <!-- Preview Results -->
-<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
-    <div class="card" style="text-align:center; padding:1rem;">
-        <div style="font-size:1.5rem; font-weight:700; color:#3498db;">{{ total_rows }}</div>
-        <div style="font-size:0.85rem; color:#777;">Total Rows</div>
+<div class="metrics-bar">
+    <div class="metric-chip">
+        <div class="metric-chip-val" style="color: var(--primary);">{{ total_rows }}</div>
+        <div class="metric-chip-label">Total Rows</div>
     </div>
-    <div class="card" style="text-align:center; padding:1rem;">
-        <div style="font-size:1.5rem; font-weight:700; color:#27ae60;">{{ new_count }}</div>
-        <div style="font-size:0.85rem; color:#777;">New Transactions</div>
+    <div class="metric-chip">
+        <div class="metric-chip-val" style="color: var(--success);">{{ new_count }}</div>
+        <div class="metric-chip-label">New Entries</div>
     </div>
-    <div class="card" style="text-align:center; padding:1rem;">
-        <div style="font-size:1.5rem; font-weight:700; color:#f39c12;">{{ duplicates }}</div>
-        <div style="font-size:0.85rem; color:#777;">Duplicates (skip)</div>
+    <div class="metric-chip">
+        <div class="metric-chip-val" style="color: var(--warning);">{{ duplicates }}</div>
+        <div class="metric-chip-label">Duplicates</div>
     </div>
-    <div class="card" style="text-align:center; padding:1rem;">
-        <div style="font-size:1.5rem; font-weight:700; color:#e74c3c;">{{ errors|length }}</div>
-        <div style="font-size:0.85rem; color:#777;">Errors</div>
+    <div class="metric-chip">
+        <div class="metric-chip-val" style="color: var(--danger);">{{ errors|length }}</div>
+        <div class="metric-chip-label">Errors</div>
     </div>
 </div>
 
 {% if errors %}
-<div style="background:#f8d7da; border:1px solid #f5c6cb; border-radius:8px; padding:1rem; margin-bottom:1rem;">
-    <strong>Parse Errors:</strong>
-    <ul style="margin:0.5rem 0 0; padding-left:1.5rem;">
+<div class="card" style="border-left: 4px solid var(--danger); margin-bottom: 1.5rem; background: #fff5f5;">
+    <strong style="color: var(--danger);">Parsing Warnings &amp; Errors:</strong>
+    <ul style="margin: 0.5rem 0 0; padding-left: 1.25rem; color: var(--text-muted); font-size: 0.9rem;">
         {% for err in errors %}
-        <li style="font-size:0.85rem;">{{ err }}</li>
+        <li>{{ err }}</li>
         {% endfor %}
     </ul>
 </div>
 {% endif %}
 
 {% if rows %}
-<div class="card">
-    <h3 style="margin-bottom:1rem;">Preview</h3>
-    <div style="overflow-x:auto;">
+<div class="card" style="margin-bottom: 1.5rem;">
+    <h2>Preview Extracted Transactions</h2>
+    <div style="overflow-x: auto;">
         <table>
             <thead>
                 <tr>
@@ -96,33 +184,29 @@
             </thead>
             <tbody>
                 {% for row in rows %}
-                <tr
-                    style="{% if row.is_duplicate %}background:#fff3cd;{% elif row.is_uncategorized %}background:#f8d7da;{% endif %}">
+                <tr style="{% if row.is_duplicate %}background: rgba(245, 158, 11, 0.05);{% elif row.is_uncategorized %}background: rgba(239, 68, 68, 0.03);{% endif %}">
                     <td>{{ row.row_num }}</td>
                     <td>{{ row.date|date:"M d, Y" }}</td>
-                    <td>{{ row.description|truncatewords:8|default:"—" }}</td>
-                    <td style="font-weight:600;">{{ currency.symbol }}{{ row.amount }}</td>
+                    <td style="font-weight: 500;">{{ row.description|truncatewords:8|default:"—" }}</td>
+                    <td style="font-weight: 700; color: {% if row.type == 'INCOME' %}var(--success){% else %}var(--danger){% endif %};">{{ currency.symbol }}{{ row.amount }}</td>
                     <td>
-                        <span style="padding:0.15rem 0.4rem; border-radius:3px; font-size:0.8rem; font-weight:600;
-                            {% if row.type == 'INCOME' %}background:#d4edda; color:#155724;
-                            {% elif row.type == 'EXPENSE' %}background:#f8d7da; color:#721c24;
-                            {% else %}background:#fff3cd; color:#856404;{% endif %}">
+                        <span class="status-badge {% if row.type == 'INCOME' %}badge-ready{% else %}badge-dup{% endif %}">
                             {{ row.type }}
                         </span>
                     </td>
                     <td>
                         {{ row.category_name }}
                         {% if row.is_uncategorized %}
-                        <span style="color:#e74c3c; font-size:0.75rem;">⚠ No match</span>
+                        <span style="color: var(--warning); font-size: 0.75rem; font-weight: 600;">(fallback)</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if row.is_duplicate %}
-                        <span style="color:#856404; font-weight:600;">⚠ Duplicate</span>
+                        <span class="status-badge badge-dup">Duplicate</span>
                         {% elif row.is_uncategorized %}
-                        <span style="color:#e67e22; font-weight:600;">✓ Auto-assigned</span>
+                        <span class="status-badge badge-auto">Auto-Assigned</span>
                         {% else %}
-                        <span style="color:#27ae60; font-weight:600;">✓ Ready</span>
+                        <span class="status-badge badge-ready">✓ Ready</span>
                         {% endif %}
                     </td>
                 </tr>
@@ -133,38 +217,38 @@
 </div>
 
 {% if new_count > 0 %}
-<form method="post" style="margin-top:1rem;">
+<form method="post">
     {% csrf_token %}
     <input type="hidden" name="confirm_import" value="1">
     <input type="hidden" name="session_key" value="{{ session_key }}">
-    <div style="display:flex; gap:0.5rem;">
-        <button type="submit" class="btn" style="background:#27ae60;">
-            ✓ Import {{ new_count }} Transaction{{ new_count|pluralize }}
+    <div style="display: flex; gap: 0.75rem;">
+        <button type="submit" class="btn btn-primary">
+            ✓ Confirm &amp; Import {{ new_count }} Transaction{{ new_count|pluralize }}
         </button>
-        <a href="{% url 'finance:import_statement' %}" class="btn" style="background:#6c757d;">Cancel</a>
+        <a href="{% url 'finance:import_statement' %}" class="btn btn-secondary">Cancel</a>
     </div>
 </form>
 {% else %}
-<div style="margin-top:1rem; padding:1rem; background:#fff3cd; border-radius:8px;">
-    <strong>No new transactions to import.</strong> All rows are either duplicates or missing valid categories.
-    <br><a href="{% url 'finance:import_statement' %}">Upload a different file</a>
+<div class="card" style="background: #fffbeb; border: 1px solid #fde68a;">
+    <strong style="color: #92400e;">No new transactions to import.</strong>
+    <p style="margin: 0.35rem 0 0.75rem 0; color: #b45309; font-size: 0.9rem;">All parsed rows are either duplicates already in your database or contained unrecoverable errors.</p>
+    <a href="{% url 'finance:import_statement' %}" class="btn btn-secondary btn-sm">Try Another Statement</a>
 </div>
 {% endif %}
 {% endif %}
 
 {% elif step == 'done' %}
 <!-- Import Complete -->
-<div class="card" style="text-align:center; padding:3rem;">
-    <div style="font-size:3rem; margin-bottom:1rem;">✅</div>
-    <h3 style="margin-bottom:0.5rem;">Import Complete!</h3>
-    <p style="color:#555; margin-bottom:1.5rem;">
-        Successfully imported <strong>{{ imported }}</strong> transaction{{ imported|pluralize }}.
-        {% if skipped > 0 %}Skipped <strong>{{ skipped }}</strong> duplicate{{ skipped|pluralize }} or uncategorized
-        row{{ skipped|pluralize }}.{% endif %}
+<div class="card" style="text-align: center; padding: 4rem 2rem; max-width: 600px; margin: 0 auto;">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">🎉</div>
+    <h3 style="margin-bottom: 0.5rem; font-size: 1.5rem; font-weight: 800;">Import Successful!</h3>
+    <p style="color: var(--text-muted); margin-bottom: 2rem; font-size: 1rem; line-height: 1.6;">
+        Successfully imported <strong>{{ imported }}</strong> transaction{{ imported|pluralize }} into your ledger.
+        {% if skipped > 0 %}<br>Skipped <strong>{{ skipped }}</strong> duplicate{{ skipped|pluralize }} or unparsed row{{ skipped|pluralize }}.{% endif %}
     </p>
-    <div style="display:flex; gap:0.5rem; justify-content:center;">
-        <a href="{% url 'finance:transaction_list' %}" class="btn">View Transactions</a>
-        <a href="{% url 'finance:import_statement' %}" class="btn" style="background:#6c757d;">Import More</a>
+    <div style="display: flex; gap: 0.75rem; justify-content: center;">
+        <a href="{% url 'finance:transaction_list' %}" class="btn btn-primary">View Ledger</a>
+        <a href="{% url 'finance:import_statement' %}" class="btn btn-secondary">Import Another File</a>
     </div>
 </div>
 {% endif %}

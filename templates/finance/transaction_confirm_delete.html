@@ -3,38 +3,34 @@
 {% block title %}Delete Transaction — Finance Tracker{% endblock %}
 
 {% block content %}
-<div style="max-width: 500px; margin: 0 auto;">
-    <div class="card">
-        <h2>Delete Transaction</h2>
-        <p>Are you sure you want to delete this transaction?</p>
+<div style="max-width: 520px; margin: 3rem auto;">
+    <div class="card" style="box-shadow: var(--shadow-md); border-top: 4px solid var(--danger); padding: 2.25rem 2rem;">
+        <h2 style="color: var(--danger); margin-top: 0; font-size: 1.5rem; font-weight: 800;">🗑️ Delete Transaction</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5;">Are you sure you want to permanently remove this transaction from your ledger?</p>
 
-        <table style="margin: 1rem 0;">
-            <tr>
-                <th>Date</th>
-                <td>{{ transaction.date|date:"M d, Y" }}</td>
-            </tr>
-            <tr>
-                <th>Type</th>
-                <td>{{ transaction.get_type_display }}</td>
-            </tr>
-            <tr>
-                <th>Category</th>
-                <td>{{ transaction.category.name }}</td>
-            </tr>
-            <tr>
-                <th>Amount</th>
-                <td>{{ transaction.currency.symbol }}{{ transaction.amount }}</td>
-            </tr>
-            <tr>
-                <th>Description</th>
-                <td>{{ transaction.description|default:"—" }}</td>
-            </tr>
-        </table>
+        <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem 1.25rem; margin: 1.25rem 0;">
+            <div style="display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid var(--border);">
+                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">Date</span>
+                <strong style="color: var(--text-main);">{{ transaction.date|date:"F d, Y" }}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid var(--border);">
+                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">Category</span>
+                <strong style="color: var(--text-main);">{{ transaction.category.name }} ({{ transaction.get_type_display }})</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid var(--border);">
+                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">Description</span>
+                <strong style="color: var(--text-main);">{{ transaction.description|default:"—" }}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 0.4rem 0;">
+                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">Amount</span>
+                <strong style="color: var(--danger); font-size: 1.15rem;">{{ transaction.currency.symbol }}{{ transaction.amount }}</strong>
+            </div>
+        </div>
 
         <form method="post">
             {% csrf_token %}
-            <div style="display: flex; gap: 0.5rem;">
-                <button type="submit" class="btn btn-danger">Yes, Delete</button>
+            <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                <button type="submit" class="btn btn-danger">Confirm Delete</button>
                 <a href="{% url 'finance:transaction_list' %}" class="btn btn-secondary">Cancel</a>
             </div>
         </form>

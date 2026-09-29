@@ -3,33 +3,30 @@
 {% block title %}Delete Budget — Finance Tracker{% endblock %}
 
 {% block content %}
-<div style="max-width: 500px; margin: 0 auto;">
-    <div class="card">
-        <h2>Delete Budget</h2>
-        <p>Are you sure you want to delete the budget for
-            <strong>"{{ budget.category.name }}"</strong>
-            ({{ budget.month|date:"M Y" }})?
-        </p>
+<div style="max-width: 520px; margin: 3rem auto;">
+    <div class="card" style="box-shadow: var(--shadow-md); border-top: 4px solid var(--danger); padding: 2.25rem 2rem;">
+        <h2 style="color: var(--danger); margin-top: 0; font-size: 1.5rem; font-weight: 800;">🗑️ Delete Budget</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5;">Are you sure you want to delete the budget limit for <strong>"{{ budget.category.name }}"</strong>?</p>
 
-        <table style="margin: 1rem 0;">
-            <tr>
-                <th>Category</th>
-                <td>{{ budget.category.name }}</td>
-            </tr>
-            <tr>
-                <th>Month</th>
-                <td>{{ budget.month|date:"M Y" }}</td>
-            </tr>
-            <tr>
-                <th>Limit</th>
-                <td>{{ budget.limit_amount }}</td>
-            </tr>
-        </table>
+        <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem 1.25rem; margin: 1.25rem 0;">
+            <div style="display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid var(--border);">
+                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">Category</span>
+                <strong style="color: var(--text-main);">{{ budget.category.name }}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid var(--border);">
+                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">Target Month</span>
+                <strong style="color: var(--text-main);">{{ budget.month|date:"F Y" }}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 0.4rem 0;">
+                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">Spending Limit</span>
+                <strong style="color: var(--danger); font-size: 1.05rem;">{{ budget.limit_amount }}</strong>
+            </div>
+        </div>
 
         <form method="post">
             {% csrf_token %}
-            <div style="display: flex; gap: 0.5rem;">
-                <button type="submit" class="btn btn-danger">Yes, Delete</button>
+            <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                <button type="submit" class="btn btn-danger">Confirm Delete</button>
                 <a href="{% url 'finance:budget_list' %}" class="btn btn-secondary">Cancel</a>
             </div>
         </form>

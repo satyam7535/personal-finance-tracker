@@ -2,55 +2,165 @@
 
 {% block title %}Notifications — Finance Tracker{% endblock %}
 
+{% block extra_css %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    .page-header h2 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        margin: 0;
+    }
+    .notif-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    .notif-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 1.25rem;
+        transition: var(--transition);
+        box-shadow: var(--shadow-sm);
+        position: relative;
+    }
+    .notif-card:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+    .notif-unread {
+        background: #f8fafc;
+        border-left: 4px solid var(--primary);
+    }
+    .notif-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+    .icon-overrun {
+        background: rgba(239, 68, 68, 0.12);
+        color: var(--danger);
+    }
+    .icon-warning {
+        background: rgba(245, 158, 11, 0.12);
+        color: var(--warning);
+    }
+    .icon-general {
+        background: rgba(79, 70, 229, 0.12);
+        color: var(--primary);
+    }
+    .notif-content {
+        flex: 1;
+    }
+    .notif-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.4rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .notif-type {
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .notif-time {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+    .notif-message {
+        margin: 0;
+        font-size: 0.95rem;
+        color: var(--text-main);
+        line-height: 1.5;
+    }
+    .notif-actions {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 0.75rem;
+    }
+    .notif-link {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--primary);
+        text-decoration: none;
+        transition: var(--transition);
+    }
+    .notif-link:hover {
+        color: var(--primary-dark);
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-    <h2 style="margin: 0;">Notifications</h2>
+<div class="page-header">
+    <div>
+        <h2>🔔 Activity Notifications</h2>
+        <span style="color: var(--text-muted); font-size: 0.9rem;">Budget alerts, thresholds, and financial updates</span>
+    </div>
     {% if notifications %}
     <form method="post" action="{% url 'finance:notification_clear_all' %}">
         {% csrf_token %}
-        <button type="submit" class="btn btn-secondary btn-sm">Clear Read</button>
+        <button type="submit" class="btn btn-secondary btn-sm">Clear All Read</button>
     </form>
     {% endif %}
 </div>
 
-<div class="card">
-    {% if notifications %}
-    <div style="display: flex; flex-direction: column; gap: 0;">
-        {% for notif in notifications %}
-        <div style="padding: 1rem; border-bottom: 1px solid #eee; display: flex; align-items: flex-start; gap: 1rem;
-            {% if not notif.is_read %}background: #f0f7ff;{% endif %}">
-            <div style="flex-shrink: 0; margin-top: 2px;">
-                {% if notif.notification_type == 'BUDGET_OVERRUN' %}
-                <span
-                    style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #e74c3c;"></span>
-                {% else %}
-                <span
-                    style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #f39c12;"></span>
-                {% endif %}
+{% if notifications %}
+<div class="notif-container">
+    {% for notif in notifications %}
+    <div class="notif-card {% if not notif.is_read %}notif-unread{% endif %}">
+        <div class="notif-icon {% if notif.notification_type == 'BUDGET_OVERRUN' %}icon-overrun{% elif notif.notification_type == 'BUDGET_WARNING' %}icon-warning{% else %}icon-general{% endif %}">
+            {% if notif.notification_type == 'BUDGET_OVERRUN' %}🚨{% elif notif.notification_type == 'BUDGET_WARNING' %}⚠️{% else %}ℹ️{% endif %}
+        </div>
+        <div class="notif-content">
+            <div class="notif-top">
+                <span class="notif-type" style="{% if notif.notification_type == 'BUDGET_OVERRUN' %}color: var(--danger);{% elif notif.notification_type == 'BUDGET_WARNING' %}color: var(--warning);{% else %}color: var(--primary);{% endif %}">
+                    {{ notif.get_notification_type_display }}
+                </span>
+                <span class="notif-time">{{ notif.created_at|timesince }} ago</span>
             </div>
-            <div style="flex: 1;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
-                    <span style="font-weight: 600; font-size: 0.85rem;
-                        {% if notif.notification_type == 'BUDGET_OVERRUN' %}color: #e74c3c;
-                        {% else %}color: #f39c12;{% endif %}">
-                        {{ notif.get_notification_type_display }}
-                    </span>
-                    <span style="font-size: 0.8rem; color: #999;">{{ notif.created_at|timesince }} ago</span>
-                </div>
-                <p style="margin: 0; font-size: 0.9rem; color: #444;">{{ notif.message }}</p>
+            <p class="notif-message">{{ notif.message }}</p>
+            <div class="notif-actions">
                 {% if notif.budget %}
-                <a href="{% url 'finance:budget_list' %}"
-                    style="font-size: 0.8rem; color: #3498db; text-decoration: none; margin-top: 0.3rem; display: inline-block;">View
-                    Budget →</a>
+                <a href="{% url 'finance:budget_list' %}" class="notif-link">Review Budget Limit →</a>
+                {% endif %}
+                {% if not notif.is_read %}
+                <form method="post" action="{% url 'finance:notification_mark_read' notif.pk %}" style="display: inline; margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" style="background: none; border: none; padding: 0; color: var(--text-muted); font-size: 0.8rem; cursor: pointer; text-decoration: underline;">Mark as read</button>
+                </form>
                 {% endif %}
             </div>
         </div>
-        {% endfor %}
     </div>
-    {% else %}
-    <p style="text-align: center; color: #888; padding: 2rem;">
-        No notifications. You're all caught up!
-    </p>
-    {% endif %}
+    {% endfor %}
 </div>
+{% else %}
+<div class="card" style="text-align: center; padding: 4rem 2rem; color: var(--text-muted);">
+    <div style="font-size: 2.5rem; margin-bottom: 1rem;">🎉</div>
+    <h3>You're completely caught up!</h3>
+    <p style="margin-top: 0.5rem;">No active notifications or budget overrun alerts.</p>
+</div>
+{% endif %}
 {% endblock %}

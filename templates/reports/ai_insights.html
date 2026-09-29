@@ -2,53 +2,217 @@
 
 {% block title %}AI Financial Insights — Finance Tracker{% endblock %}
 
+{% block extra_css %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    .page-header h2 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        margin: 0;
+    }
+    .provider-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 1rem;
+        border-radius: var(--radius-pill);
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+    }
+    .provider-ai {
+        background: linear-gradient(135deg, rgba(79, 70, 229, 0.15) 0%, rgba(124, 58, 237, 0.15) 100%);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        color: var(--primary);
+    }
+    .provider-rules {
+        background: #f1f5f9;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+    }
+    .summary-hero {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        color: #ffffff;
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.35);
+        position: relative;
+        overflow: hidden;
+    }
+    .summary-hero::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    .summary-hero h3 {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0 0 0.25rem 0;
+    }
+    .summary-hero .period-text {
+        font-size: 0.85rem;
+        opacity: 0.85;
+        margin-bottom: 1.5rem;
+    }
+    .hero-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+    .hero-stat-card {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 1.25rem 1rem;
+        border-radius: var(--radius-md);
+        text-align: center;
+        transition: var(--transition);
+    }
+    .hero-stat-card:hover {
+        background: rgba(255, 255, 255, 0.22);
+        transform: translateY(-2px);
+    }
+    .hero-stat-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        opacity: 0.85;
+        margin-bottom: 0.35rem;
+    }
+    .hero-stat-value {
+        font-size: 1.4rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+    }
+    .insights-list {
+        display: grid;
+        gap: 1.25rem;
+    }
+    .insight-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem 1.75rem;
+        position: relative;
+        transition: var(--transition);
+        box-shadow: var(--shadow-sm);
+    }
+    .insight-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+    .insight-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 5px;
+        border-top-left-radius: var(--radius-lg);
+        border-bottom-left-radius: var(--radius-lg);
+    }
+    .insight-positive::before { background: var(--success); }
+    .insight-warning::before { background: var(--warning); }
+    .insight-danger::before { background: var(--danger); }
+    .insight-neutral::before { background: var(--info); }
+
+    .insight-card h4 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 0 0 0.5rem 0;
+        color: var(--text-main);
+    }
+    .insight-card p {
+        color: var(--text-muted);
+        margin: 0;
+        line-height: 1.65;
+        font-size: 0.95rem;
+    }
+    .info-box {
+        margin-top: 2rem;
+        padding: 1.5rem 2rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+    }
+    .info-box code {
+        background: #f1f5f9;
+        color: var(--primary);
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.85em;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+<div class="page-header">
     <h2>🤖 AI Financial Insights</h2>
-    <span style="padding:0.3rem 0.8rem; border-radius:4px; font-size:0.8rem; font-weight:600; {% if ai_powered %}background:#d4edda; color:#155724;{% else %}background:#cce5ff; color:#004085;{% endif %}">{{ provider }}</span>
+    <span class="provider-pill {% if ai_powered %}provider-ai{% else %}provider-rules{% endif %}">
+        {% if ai_powered %}✨{% else %}⚡{% endif %} {{ provider }}
+    </span>
 </div>
 
-<div class="card" style="margin-bottom:1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:#fff;">
-    <h3 style="margin-bottom:1rem; color:#fff;">📊 Last 30 Days Summary</h3>
-    <p style="font-size:0.85rem; opacity:0.8; margin-bottom:1rem;">{{ context.period }}</p>
-    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:1rem;">
-        <div style="background:rgba(255,255,255,0.15); padding:0.8rem; border-radius:8px; text-align:center;">
-            <div style="font-size:0.75rem; opacity:0.8;">Income</div>
-            <div style="font-size:1.2rem; font-weight:700;">{{ context.currency_symbol }}{{ context.income|floatformat:2 }}</div>
+<div class="summary-hero">
+    <h3>📊 30-Day Financial Snapshot</h3>
+    <div class="period-text">{{ context.period }} • Active analysis in {{ context.currency_code }}</div>
+    <div class="hero-grid">
+        <div class="hero-stat-card">
+            <div class="hero-stat-label">Income</div>
+            <div class="hero-stat-value">{{ context.currency_symbol }}{{ context.income|floatformat:2 }}</div>
         </div>
-        <div style="background:rgba(255,255,255,0.15); padding:0.8rem; border-radius:8px; text-align:center;">
-            <div style="font-size:0.75rem; opacity:0.8;">Expenses</div>
-            <div style="font-size:1.2rem; font-weight:700;">{{ context.currency_symbol }}{{ context.expenses|floatformat:2 }}</div>
+        <div class="hero-stat-card">
+            <div class="hero-stat-label">Expenses</div>
+            <div class="hero-stat-value">{{ context.currency_symbol }}{{ context.expenses|floatformat:2 }}</div>
         </div>
-        <div style="background:rgba(255,255,255,0.15); padding:0.8rem; border-radius:8px; text-align:center;">
-            <div style="font-size:0.75rem; opacity:0.8;">Investments</div>
-            <div style="font-size:1.2rem; font-weight:700;">{{ context.currency_symbol }}{{ context.investments|floatformat:2 }}</div>
+        <div class="hero-stat-card">
+            <div class="hero-stat-label">Investments</div>
+            <div class="hero-stat-value">{{ context.currency_symbol }}{{ context.investments|floatformat:2 }}</div>
         </div>
-        <div style="background:rgba(255,255,255,0.15); padding:0.8rem; border-radius:8px; text-align:center;">
-            <div style="font-size:0.75rem; opacity:0.8;">Net Savings</div>
-            <div style="font-size:1.2rem; font-weight:700;">{{ context.currency_symbol }}{{ context.savings|floatformat:2 }}</div>
+        <div class="hero-stat-card">
+            <div class="hero-stat-label">Net Savings</div>
+            <div class="hero-stat-value">{{ context.currency_symbol }}{{ context.savings|floatformat:2 }}</div>
         </div>
     </div>
 </div>
 
-<div style="display:grid; gap:1rem;">
+<div class="insights-list">
     {% for insight in insights %}
-    <div class="card" style="border-left: 4px solid {% if insight.type == 'positive' %}#27ae60{% elif insight.type == 'warning' %}#f39c12{% elif insight.type == 'danger' %}#e74c3c{% else %}#3498db{% endif %};">
-        <h4 style="margin-bottom:0.5rem;">{{ insight.title }}</h4>
-        <p style="color:#555; margin:0; line-height:1.6;">{{ insight.body }}</p>
+    <div class="insight-card insight-{{ insight.type }}">
+        <h4>{{ insight.title }}</h4>
+        <p>{{ insight.body }}</p>
     </div>
     {% empty %}
-    <div class="card" style="text-align:center; padding:3rem; color:#999;">
-        <p>No insights available yet. Start adding transactions to get personalized financial advice.</p>
+    <div class="card" style="text-align: center; padding: 4rem 2rem; color: var(--text-muted);">
+        <div style="font-size: 2.5rem; margin-bottom: 1rem;">💡</div>
+        <h3>No insights available yet</h3>
+        <p style="margin-top: 0.5rem;">Start logging your income, expenses, and budgets to generate personalized financial advice.</p>
     </div>
     {% endfor %}
 </div>
 
 {% if not ai_powered %}
-<div style="margin-top:1.5rem; padding:1rem; background:#f8f9fa; border-radius:8px; font-size:0.85rem; color:#666;">
-    <strong>💡 Tip:</strong> These insights are generated using smart rule-based analysis of your
-    actual financial data. To enable AI-powered insights, add a <code>GEMINI_API_KEY</code>
-    (free) or <code>OPENAI_API_KEY</code> to your environment configuration.
+<div class="info-box">
+    <strong style="color: var(--text-main);">💡 Recommendation Engine:</strong> These insights are synthesized using intelligent rule-based heuristic analysis of your recent cash flow, savings rate, and category budget ratios. To enable advanced generative LLM insights, add a <code>GEMINI_API_KEY</code> (free tier) or <code>OPENAI_API_KEY</code> to your environment file.
 </div>
 {% endif %}
 {% endblock %}

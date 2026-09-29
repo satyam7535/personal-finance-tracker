@@ -3,15 +3,15 @@
 {% block title %}{{ title }} — Finance Tracker{% endblock %}
 
 {% block content %}
-<div style="max-width: 600px; margin: 0 auto;">
-    <div class="card">
-        <h2>{{ title }}</h2>
+<div style="max-width: 620px; margin: 2rem auto;">
+    <div class="card" style="box-shadow: var(--shadow-md); padding: 2.25rem 2rem;">
+        <h2 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; margin-top: 0; margin-bottom: 1.5rem;">{{ title }}</h2>
         <form method="post" enctype="multipart/form-data" novalidate>
             {% csrf_token %}
 
             {% for field in form %}
             <div class="form-group">
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                <label for="{{ field.id_for_label }}" style="font-weight: 600; font-size: 0.9rem;">{{ field.label }}</label>
                 {{ field }}
                 {% if field.help_text %}
                 <small class="helptext">{{ field.help_text }}</small>
@@ -25,17 +25,16 @@
             {% endfor %}
 
             {% if form.non_field_errors %}
-            <div
-                style="background: #f8d7da; color: #721c24; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
+            <div style="background: #fee2e2; border: 1px solid #fecaca; color: #b91c1c; padding: 0.85rem 1rem; border-radius: var(--radius-md); margin-bottom: 1.25rem; font-size: 0.9rem;">
                 {% for error in form.non_field_errors %}
-                <p>{{ error }}</p>
+                <p style="margin: 0;">{{ error }}</p>
                 {% endfor %}
             </div>
             {% endif %}
 
-            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                <button type="submit" class="btn btn-success">
-                    {% if transaction %}Update{% else %}Add{% endif %} Transaction
+            <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                <button type="submit" class="btn btn-primary">
+                    {% if transaction %}Update Transaction{% else %}Add Transaction{% endif %}
                 </button>
                 <a href="{% url 'finance:transaction_list' %}" class="btn btn-secondary">Cancel</a>
             </div>
