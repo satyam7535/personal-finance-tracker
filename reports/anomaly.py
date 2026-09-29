@@ -3,11 +3,12 @@ Multi-Signal Anomaly & Fraud Detection for spending patterns.
 
 Employs multiple detection methods for robust anomaly identification:
 
-1. Z-Score Analysis  — flags transactions > 2σ above category mean
-2. IQR (Interquartile Range) — robust outlier detection for skewed data
-3. Frequency Spike  — detects unusual bursts of transactions per day
-4. Round Number Flag — suspicious round-amount transactions (fraud indicator)
-5. Velocity Check   — multiple transactions to same category within short period
+1. MAD (Median Absolute Deviation) — robust outlier detection resistant to extreme skew
+2. Z-Score Analysis  — flags transactions > 2σ above category mean
+3. IQR (Interquartile Range) — robust outlier detection for skewed distributions
+4. Frequency Spike  — detects unusual bursts of transactions per day
+5. Round Number Flag — suspicious round-amount transactions (fraud indicator)
+6. Velocity Check   — multiple transactions to same category within short period
 
 Each transaction receives a composite risk score (0-100) based on
 how many signals it triggers.
@@ -19,6 +20,46 @@ from collections import defaultdict, Counter
 
 from finance.models import Transaction
 from finance.currency_utils import get_user_preferred_currency, convert_amount
+
+
+def _median(sorted_vals):
+    """Calculate the median of a sorted list of numbers."""
+    n = len(sorted_vals)
+    if n == 0:
+        return 0.0
+    mid = n // 2
+    if n % 2 == 1:
+        return float(sorted_vals[mid])
+    return float(sorted_vals[mid - 1] + sorted_vals[mid]) / 2.0
+
+
+def _mad_flag(amount, amounts_sorted, threshold=3.5):
+    """
+    MAD (Median Absolute Deviation) robust outlier detection.
+    Computes Boris Iglewicz and David Hoaglin modified Z-score:
+        M_i = 0.6745 * (amount - median) / MAD
+    Outlier if M_i > threshold (default 3.5).
+    Immune to extreme skew in financial transactions (e.g. 100 small expenses and 1 laptop).
+    """
+    n = len(amounts_sorted)
+    if n < 3:
+        return None
+    med = _median(amounts_sorted)
+    deviations = sorted(abs(x - med) for x in amounts_sorted)
+    mad = _median(deviations)
+
+    if mad == 0:
+        # Fallback to mean absolute deviation about median if >50% values are identical
+        mean_ad = sum(deviations) / n
+        if mean_ad == 0:
+            return None
+        mod_z = 0.6745 * (amount - med) / mean_ad
+    else:
+        mod_z = 0.6745 * (amount - med) / mad
+
+    if mod_z > threshold:
+        return round(mod_z, 2)
+    return None
 
 
 def _zscore_flag(amount, mean, std_dev, threshold=2.0):
@@ -81,7 +122,8 @@ def _compute_risk_score(signals):
     """
     score = 0
     weights = {
-        'zscore': 35,       # strongest statistical signal
+        'mad': 30,          # robust statistical outlier (immune to extreme skew)
+        'zscore': 35,       # strongest traditional statistical signal
         'iqr': 25,          # robust outlier confirmation
         'round_number': 15, # mild fraud indicator
         'frequency': 15,    # unusual activity pattern
@@ -98,11 +140,12 @@ def get_anomalies(user, sensitivity=2.0):
     Multi-signal anomaly detection across all expense categories.
 
     Detection Methods:
-        1. Z-Score (>2σ) — statistical outlier
-        2. IQR fence — robust for non-normal distributions
-        3. Round numbers — fraud pattern indicator
-        4. Frequency spike — unusual daily transaction volume
-        5. Velocity — same-category clustering
+        1. MAD (Median Absolute Deviation) — modified Z-score (M_i > 3.5)
+        2. Z-Score (>2σ) — statistical outlier
+        3. IQR fence — robust for non-normal distributions
+        4. Round numbers — fraud pattern indicator
+        5. Frequency spike — unusual daily transaction volume
+        6. Velocity — same-category clustering
 
     Returns:
         dict with anomalies, category_stats, detection_summary,
@@ -123,7 +166,7 @@ def get_anomalies(user, sensitivity=2.0):
             'total_flagged': 0,
             'preferred_currency': preferred,
             'detection_summary': {
-                'zscore': 0, 'iqr': 0, 'round_number': 0,
+                'mad': 0, 'zscore': 0, 'iqr': 0, 'round_number': 0,
                 'frequency': 0, 'velocity': 0,
             },
         }
@@ -155,7 +198,7 @@ def get_anomalies(user, sensitivity=2.0):
     anomalies = []
     category_stats = []
     detection_counts = {
-        'zscore': 0, 'iqr': 0, 'round_number': 0,
+        'mad': 0, 'zscore': 0, 'iqr': 0, 'round_number': 0,
         'frequency': 0, 'velocity': 0,
     }
 
@@ -173,16 +216,26 @@ def get_anomalies(user, sensitivity=2.0):
                 'category': cat_name,
                 'count': n,
                 'mean': mean_dec,
+                'median': Decimal('0.00'),
                 'std_dev': Decimal('0.00'),
+                'mad': Decimal('0.00'),
+                'threshold_mad': None,
                 'threshold_zscore': None,
                 'threshold_iqr': None,
                 'note': 'Insufficient data (need 3+ transactions)',
             })
             continue
 
+        # Standard Z-Score parameters
         variance = sum((x - mean) ** 2 for x in amounts) / n
         std_dev = math.sqrt(variance)
         threshold_z = mean + sensitivity * std_dev
+
+        # MAD (Median Absolute Deviation) parameters
+        med = _median(amounts_sorted)
+        deviations = sorted(abs(x - med) for x in amounts_sorted)
+        mad = _median(deviations)
+        threshold_mad = med + (3.5 / 0.6745) * mad if mad > 0 else None
 
         # IQR bounds
         q1 = amounts_sorted[n // 4]
@@ -191,14 +244,20 @@ def get_anomalies(user, sensitivity=2.0):
         threshold_iqr = q3 + 1.5 * iqr
 
         std_dec = Decimal(str(std_dev)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        med_dec = Decimal(str(med)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        mad_dec = Decimal(str(mad)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         tz_dec = Decimal(str(threshold_z)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         ti_dec = Decimal(str(threshold_iqr)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        tmad_dec = Decimal(str(threshold_mad)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP) if threshold_mad else None
 
         category_stats.append({
             'category': cat_name,
             'count': n,
             'mean': mean_dec,
+            'median': med_dec,
             'std_dev': std_dec,
+            'mad': mad_dec,
+            'threshold_mad': tmad_dec,
             'threshold_zscore': tz_dec,
             'threshold_iqr': ti_dec,
             'note': None,
@@ -210,30 +269,36 @@ def get_anomalies(user, sensitivity=2.0):
             tx = item['tx']
             signals = {}
 
-            # Signal 1: Z-Score
+            # Signal 1: MAD (Median Absolute Deviation - robust outlier)
+            mad_z = _mad_flag(amt, amounts_sorted)
+            if mad_z:
+                signals['mad'] = mad_z
+                detection_counts['mad'] += 1
+
+            # Signal 2: Z-Score
             z = _zscore_flag(amt, mean, std_dev, sensitivity)
             if z:
                 signals['zscore'] = z
                 detection_counts['zscore'] += 1
 
-            # Signal 2: IQR outlier
+            # Signal 3: IQR outlier
             if _iqr_flag(amt, amounts_sorted):
                 signals['iqr'] = True
                 detection_counts['iqr'] += 1
 
-            # Signal 3: Round number
+            # Signal 4: Round number
             rnd = _round_number_flag(item['converted_amount'])
             if rnd:
                 signals['round_number'] = rnd
                 detection_counts['round_number'] += 1
 
-            # Signal 4: Frequency spike
+            # Signal 5: Frequency spike
             freq = _frequency_spike(tx.date, date_counter, avg_daily)
             if freq:
                 signals['frequency'] = freq
                 detection_counts['frequency'] += 1
 
-            # Signal 5: Velocity (same-category same-day)
+            # Signal 6: Velocity (same-category same-day)
             vel = _velocity_flag(tx, items)
             if vel:
                 signals['velocity'] = vel
@@ -249,9 +314,11 @@ def get_anomalies(user, sensitivity=2.0):
                     'signals': signals,
                     'risk_score': risk_score,
                     'signal_count': len(signals),
+                    'mad_score': signals.get('mad', 0),
                     'z_score': signals.get('zscore', 0),
                     'threshold': tz_dec,
                     'mean': mean_dec,
+                    'median': med_dec,
                     'deviation_pct': round(((amt - mean) / mean) * 100, 1) if mean > 0 else 0,
                 })
 

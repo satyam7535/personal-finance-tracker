@@ -74,6 +74,7 @@
         letter-spacing: 0.05em;
         margin-top: 0.25rem;
     }
+    .signal-mad { color: #b91c1c; }
     .signal-zscore { color: var(--danger); }
     .signal-iqr { color: #ea580c; }
     .signal-round { color: #7c3aed; }
@@ -103,6 +104,7 @@
         margin: 0.1rem;
         color: #fff;
     }
+    .pill-mad { background: #b91c1c; }
     .pill-zscore { background: var(--danger); }
     .pill-iqr { background: #ea580c; }
     .pill-round { background: #7c3aed; }
@@ -154,12 +156,16 @@
     <span class="alert-icon">⚠️</span>
     <div>
         <strong>{{ total_flagged }} suspicious transaction{{ total_flagged|pluralize }} flagged</strong>
-        <p>Five detection signals analysed: Z-Score, IQR outlier, round-number pattern, frequency spike &amp; velocity clustering.</p>
+        <p>Six detection signals analysed: MAD robust outlier, Z-Score, IQR outlier, round-number pattern, frequency spike &amp; velocity clustering.</p>
     </div>
 </div>
 
 <!-- Signal Summary Cards -->
 <div class="signal-cards">
+    <div class="signal-card">
+        <div class="signal-count signal-mad">{{ detection_summary.mad }}</div>
+        <div class="signal-label">MAD Outlier</div>
+    </div>
     <div class="signal-card">
         <div class="signal-count signal-zscore">{{ detection_summary.zscore }}</div>
         <div class="signal-label">Z-Score (&gt;2σ)</div>
@@ -187,7 +193,7 @@
     <span class="alert-icon">✅</span>
     <div>
         <strong>No anomalies detected</strong>
-        <p>All transactions passed 5-signal analysis. No suspicious patterns found.</p>
+        <p>All transactions passed 6-signal analysis. No suspicious patterns found.</p>
     </div>
 </div>
 {% endif %}
@@ -198,7 +204,7 @@
     <div style="overflow-x: auto;">
         <table>
             <thead>
-                <tr><th>Risk</th><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Avg</th><th>Deviation</th><th>Signals</th></tr>
+                <tr><th>Risk</th><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Avg (Median)</th><th>Deviation</th><th>Signals</th></tr>
             </thead>
             <tbody>
                 {% for a in anomalies %}
@@ -210,9 +216,10 @@
                     <td style="font-weight: 600;">{{ a.category }}</td>
                     <td>{{ a.tx.description|truncatewords:5|default:"—" }}</td>
                     <td style="font-weight: 700; color: var(--danger);">{{ preferred_currency.symbol }}{{ a.converted_amount }}</td>
-                    <td style="color: var(--text-muted);">{{ preferred_currency.symbol }}{{ a.mean }}</td>
+                    <td style="color: var(--text-muted);">{{ preferred_currency.symbol }}{{ a.mean }} ({{ preferred_currency.symbol }}{{ a.median }})</td>
                     <td><span class="deviation-badge">+{{ a.deviation_pct }}%</span></td>
                     <td>
+                        {% if a.signals.mad %}<span class="signal-pill pill-mad">MAD:{{ a.signals.mad }}</span>{% endif %}
                         {% if a.signals.zscore %}<span class="signal-pill pill-zscore">Z:{{ a.signals.zscore }}σ</span>{% endif %}
                         {% if a.signals.iqr %}<span class="signal-pill pill-iqr">IQR</span>{% endif %}
                         {% if a.signals.round_number %}<span class="signal-pill pill-round">Round</span>{% endif %}
@@ -229,25 +236,26 @@
 
 <div class="card">
     <h2>📊 Category Statistics</h2>
-    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem; margin-top: -0.5rem;">Per-category statistical thresholds: Z-Score (mean + 2σ) and IQR (Q3 + 1.5 × IQR).</p>
+    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem; margin-top: -0.5rem;">Per-category statistical thresholds: MAD (modified Z &gt; 3.5), Z-Score (mean + 2σ) and IQR (Q3 + 1.5 × IQR).</p>
     <div style="overflow-x: auto;">
         <table>
             <thead>
-                <tr><th>Category</th><th>Count</th><th>Mean</th><th>Std Dev</th><th>Z-Threshold</th><th>IQR-Threshold</th><th>Status</th></tr>
+                <tr><th>Category</th><th>Count</th><th>Mean (Median)</th><th>MAD</th><th>MAD-Threshold</th><th>Z-Threshold</th><th>IQR-Threshold</th><th>Status</th></tr>
             </thead>
             <tbody>
                 {% for s in category_stats %}
                 <tr>
                     <td style="font-weight: 600;">{{ s.category }}</td>
                     <td>{{ s.count }}</td>
-                    <td>{{ preferred_currency.symbol }}{{ s.mean }}</td>
-                    <td>{{ preferred_currency.symbol }}{{ s.std_dev }}</td>
+                    <td>{{ preferred_currency.symbol }}{{ s.mean }} <span style="color: var(--text-muted); font-size: 0.8rem;">({{ preferred_currency.symbol }}{{ s.median }})</span></td>
+                    <td>{{ preferred_currency.symbol }}{{ s.mad }}</td>
+                    <td>{% if s.threshold_mad %}{{ preferred_currency.symbol }}{{ s.threshold_mad }}{% else %}—{% endif %}</td>
                     <td>{% if s.threshold_zscore %}{{ preferred_currency.symbol }}{{ s.threshold_zscore }}{% else %}—{% endif %}</td>
                     <td>{% if s.threshold_iqr %}{{ preferred_currency.symbol }}{{ s.threshold_iqr }}{% else %}—{% endif %}</td>
                     <td>{% if s.note %}<span class="status-insufficient">{{ s.note }}</span>{% else %}<span class="status-analyzed">✓ Analyzed</span>{% endif %}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-muted);">No expense transactions found. Add some transactions to see anomaly analysis.</td></tr>
+                <tr><td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-muted);">No expense transactions found. Add some transactions to see anomaly analysis.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -257,6 +265,7 @@
 <div class="info-footer">
     <strong>Multi-Signal Detection Engine:</strong>
     <ol>
+        <li><strong>MAD (Median Absolute Deviation)</strong> — flags if Boris Iglewicz &amp; David Hoaglin modified Z-score &gt; 3.5 (highly robust to extreme spending skew)</li>
         <li><strong>Z-Score</strong> — flags if amount &gt; mean + 2σ (statistical outlier in category)</li>
         <li><strong>IQR Outlier</strong> — flags if amount &gt; Q3 + 1.5 × IQR (robust, resists skewed data)</li>
         <li><strong>Round Number</strong> — flags suspiciously round amounts (₹500, ₹1000, etc.)</li>

@@ -140,7 +140,7 @@
                 </td>
                 <td>
                     {% if item.tx.receipt %}
-                    <a href="{{ item.tx.receipt.url }}" target="_blank" class="receipt-link">📎 View</a>
+                    <a href="{% url 'finance:transaction_receipt_download' item.tx.pk %}" target="_blank" class="receipt-link">📎 View</a>
                     {% else %}
                     <span style="color: var(--text-muted);">—</span>
                     {% endif %}

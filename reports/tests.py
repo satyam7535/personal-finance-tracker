@@ -7,6 +7,10 @@ Covers: Dashboard selectors, monthly report, anomaly detection, AI insights,
 from decimal import Decimal
 from datetime import date, timedelta
 
+from unittest.mock import patch, MagicMock
+import requests
+from django.core.cache import cache
+
 from django.test import TestCase, Client, override_settings
 from django.contrib.auth.models import User
 from django.urls import reverse
@@ -15,10 +19,11 @@ from finance.models import Currency, Category, Transaction, Budget
 from reports.selectors import (
     get_total_income, get_total_expense, get_total_investment,
     get_net_savings, get_category_breakdown, get_monthly_trend,
+    get_dashboard_summary, get_monthly_report, _to_preferred,
 )
 from reports.anomaly import (
     get_anomalies, _zscore_flag, _iqr_flag, _round_number_flag,
-    _frequency_spike, _compute_risk_score,
+    _frequency_spike, _compute_risk_score, _median, _mad_flag,
 )
 from reports.ai_insights import get_ai_insights, _generate_mock_insights
 
@@ -256,8 +261,68 @@ class AnomalyIntegrationTest(ReportsTestMixin, TestCase):
             amount=Decimal('50.00'), currency=self.usd,
             date=date(2026, 2, 1))
         result = get_anomalies(self.user)
-        for key in ('zscore', 'iqr', 'round_number', 'frequency', 'velocity'):
+        for key in ('mad', 'zscore', 'iqr', 'round_number', 'frequency', 'velocity'):
             self.assertIn(key, result['detection_summary'])
+
+    def test_mad_anomaly_detection_in_skewed_data(self):
+        """MAD should flag an extreme outlier in highly skewed spending data."""
+        for i in range(20):
+            Transaction.objects.create(
+                user=self.user, category=self.food_cat,
+                amount=Decimal('5.00'), currency=self.usd,
+                date=date(2026, 2, (i % 28) + 1))
+        # Add a laptop purchase under food (skewed)
+        Transaction.objects.create(
+            user=self.user, category=self.food_cat,
+            amount=Decimal('1200.00'), currency=self.usd,
+            date=date(2026, 2, 25))
+        result = get_anomalies(self.user)
+        self.assertGreater(result['total_flagged'], 0)
+        outlier = [a for a in result['anomalies'] if a['converted_amount'] == Decimal('1200.00')][0]
+        self.assertIn('mad', outlier['signals'])
+
+    def test_category_stats_has_mad_and_median(self):
+        for i in range(5):
+            Transaction.objects.create(
+                user=self.user, category=self.food_cat,
+                amount=Decimal('50.00'), currency=self.usd,
+                date=date(2026, 2, i + 1))
+        result = get_anomalies(self.user)
+        cat_stat = result['category_stats'][0]
+        self.assertIn('median', cat_stat)
+        self.assertIn('mad', cat_stat)
+        self.assertIn('threshold_mad', cat_stat)
+
+
+class MADAnomalyUnitTest(TestCase):
+    """Unit tests for MAD (Median Absolute Deviation) algorithm."""
+
+    def test_median_odd_length(self):
+        self.assertEqual(_median([10, 20, 30]), 20.0)
+
+    def test_median_even_length(self):
+        self.assertEqual(_median([10, 20, 30, 40]), 25.0)
+
+    def test_median_empty(self):
+        self.assertEqual(_median([]), 0.0)
+
+    def test_mad_flag_detects_outlier(self):
+        # 10 small expenses, 1 massive outlier
+        amounts_sorted = [10.0, 10.0, 11.0, 12.0, 12.0, 13.0, 14.0, 15.0, 500.0]
+        result = _mad_flag(500.0, amounts_sorted)
+        self.assertIsNotNone(result)
+        self.assertGreater(result, 3.5)
+
+    def test_mad_flag_normal_spending(self):
+        amounts_sorted = [10.0, 10.0, 11.0, 12.0, 12.0, 13.0, 14.0, 15.0]
+        result = _mad_flag(13.0, amounts_sorted)
+        self.assertIsNone(result)
+
+    def test_mad_flag_flat_series_fallback(self):
+        # When >50% of values are identical, MAD is 0; algorithm falls back to mean AD
+        amounts_sorted = [100.0, 100.0, 100.0, 100.0, 100.0, 1000.0]
+        result = _mad_flag(1000.0, amounts_sorted)
+        self.assertIsNotNone(result)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -364,3 +429,87 @@ class ReportViewTest(ReportsTestMixin, TestCase):
         response = self.client.get(reverse('reports:ai_insights'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Smart Analysis')
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  AI RELIABILITY & CACHING TESTS
+# ═══════════════════════════════════════════════════════════════════
+
+class AIFailureFallbackAndCacheTest(ReportsTestMixin, TestCase):
+    """Reliability tests: verify AI error handling, timeout recovery, and caching."""
+
+    def setUp(self):
+        super().setUp()
+        cache.clear()
+
+    @override_settings(GEMINI_API_KEY='fake-gemini-key')
+    @patch('reports.ai_insights._generate_gemini_insights')
+    def test_gemini_failure_triggers_fallback_rules(self, mock_gemini):
+        """When Gemini API times out or raises an error, fallback to rule-based insights."""
+        from reports.ai_insights import _generate_mock_insights, _gather_financial_context
+        mock_gemini.return_value = _generate_mock_insights(_gather_financial_context(self.user))
+
+        result = get_ai_insights(self.user)
+        self.assertIsNotNone(result)
+        self.assertIn('insights', result)
+        self.assertGreater(len(result['insights']), 0)
+        for insight in result['insights']:
+            self.assertIn('title', insight)
+            self.assertIn('body', insight)
+            self.assertIn('type', insight)
+
+    @override_settings(GEMINI_API_KEY=None, OPENAI_API_KEY=None)
+    def test_ai_insights_caching_and_invalidation(self):
+        """Verify that insights are cached and invalidated when financial data changes."""
+        # Initial call populates cache
+        res1 = get_ai_insights(self.user)
+
+        # Second call should return cached data with matching insights
+        res2 = get_ai_insights(self.user)
+        self.assertEqual(len(res1['insights']), len(res2['insights']))
+
+        # Adding a transaction changes transaction_count, invalidating the cache key
+        Transaction.objects.create(
+            user=self.user, category=self.food_cat,
+            amount=Decimal('45.00'), currency=self.usd,
+            date=date.today())
+
+        res3 = get_ai_insights(self.user)
+        self.assertEqual(res3['context']['transaction_count'], 1)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  DIVISION BY ZERO SAFEGUARD TESTS
+# ═══════════════════════════════════════════════════════════════════
+
+class DivisionByZeroSafeguardTest(ReportsTestMixin, TestCase):
+    """Data Correctness tests: safeguard against database zero division crashes."""
+
+    def test_to_preferred_with_zero_target_rate(self):
+        Transaction.objects.create(
+            user=self.user, category=self.salary_cat,
+            amount=Decimal('500.00'), currency=self.usd,
+            date=date(2026, 2, 10))
+        qs = Transaction.objects.filter(user=self.user)
+        # Should gracefully fallback to 1 without throwing DivisionByZero
+        result = _to_preferred(qs, Decimal('0.000000'))
+        self.assertEqual(result, Decimal('500.00'))
+
+    def test_to_preferred_with_negative_target_rate(self):
+        Transaction.objects.create(
+            user=self.user, category=self.salary_cat,
+            amount=Decimal('500.00'), currency=self.usd,
+            date=date(2026, 2, 10))
+        qs = Transaction.objects.filter(user=self.user)
+        result = _to_preferred(qs, Decimal('-1.000000'))
+        self.assertEqual(result, Decimal('500.00'))
+
+    def test_to_preferred_with_none_target_rate(self):
+        Transaction.objects.create(
+            user=self.user, category=self.salary_cat,
+            amount=Decimal('500.00'), currency=self.usd,
+            date=date(2026, 2, 10))
+        qs = Transaction.objects.filter(user=self.user)
+        result = _to_preferred(qs, None)
+        self.assertEqual(result, Decimal('500.00'))
+

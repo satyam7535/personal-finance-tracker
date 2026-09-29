@@ -10,6 +10,7 @@ from datetime import date
 from django.test import TestCase, Client, override_settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError, PermissionDenied
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.db.models import ProtectedError
 
@@ -682,3 +683,114 @@ class ImportServiceTest(FinanceTestMixin, TestCase):
         # Should return existing on second call
         cat2 = _get_or_create_fallback_category(self.user, 'EXPENSE')
         self.assertEqual(cat.pk, cat2.pk)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  SECURITY & DATA INTEGRITY TESTS (P0)
+# ═══════════════════════════════════════════════════════════════════
+
+class TransactionReceiptSecurityTest(FinanceTestMixin, TestCase):
+    """P0 Security tests: ensure receipts are protected from IDOR vulnerabilities."""
+
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
+        # Create transaction with an uploaded receipt
+        receipt_file = SimpleUploadedFile(
+            name='test_receipt.txt',
+            content=b'Confidential medical receipt content',
+            content_type='text/plain',
+        )
+        self.tx = Transaction.objects.create(
+            user=self.user,
+            category=self.expense_cat,
+            amount=Decimal('150.00'),
+            currency=self.usd,
+            date=date(2026, 2, 10),
+            receipt=receipt_file,
+        )
+
+    def tearDown(self):
+        # Clean up uploaded file from storage
+        if self.tx.receipt:
+            self.tx.receipt.delete(save=False)
+        super().tearDown()
+
+    def test_owner_can_download_receipt(self):
+        self.client.force_login(self.user)
+        url = reverse('finance:transaction_receipt_download', args=[self.tx.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        content = b''.join(response.streaming_content) if response.streaming else response.content
+        self.assertIn(b'Confidential medical receipt content', content)
+
+    def test_other_user_forbidden_from_downloading_receipt(self):
+        """User B must receive 403 Forbidden when attempting to access User A's receipt (IDOR protection)."""
+        self.client.force_login(self.other_user)
+        url = reverse('finance:transaction_receipt_download', args=[self.tx.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_unauthenticated_user_redirected_to_login(self):
+        """Anonymous requests must be redirected to the login page."""
+        url = reverse('finance:transaction_receipt_download', args=[self.tx.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login/', response.url)
+
+    def test_transaction_without_receipt_returns_404(self):
+        tx_no_receipt = Transaction.objects.create(
+            user=self.user,
+            category=self.expense_cat,
+            amount=Decimal('20.00'),
+            currency=self.usd,
+            date=date(2026, 2, 10),
+        )
+        self.client.force_login(self.user)
+        url = reverse('finance:transaction_receipt_download', args=[tx_no_receipt.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+
+class HistoricalExchangeRateLockTest(FinanceTestMixin, TestCase):
+    """P0 Data Correctness: historical exchange rate must lock at creation time."""
+
+    def test_exchange_rate_locked_at_transaction_creation(self):
+        tx = Transaction.objects.create(
+            user=self.user,
+            category=self.expense_cat,
+            amount=Decimal('100.00'),
+            currency=self.eur,
+            date=date(2026, 1, 10),
+        )
+        self.assertEqual(tx.exchange_rate_at_time, Decimal('1.080000'))
+
+    def test_historical_rate_immune_to_currency_rate_change(self):
+        tx = Transaction.objects.create(
+            user=self.user,
+            category=self.expense_cat,
+            amount=Decimal('100.00'),
+            currency=self.eur,
+            date=date(2026, 1, 10),
+        )
+        # Currency rate fluctuates in the market today
+        self.eur.exchange_rate_to_usd = Decimal('1.450000')
+        self.eur.save()
+
+        # Reload transaction from DB: locked rate MUST remain 1.080000
+        tx.refresh_from_db()
+        self.assertEqual(tx.exchange_rate_at_time, Decimal('1.080000'))
+        self.assertNotEqual(tx.exchange_rate_at_time, self.eur.exchange_rate_to_usd)
+
+    def test_custom_exchange_rate_at_time_preserved(self):
+        tx = Transaction.objects.create(
+            user=self.user,
+            category=self.expense_cat,
+            amount=Decimal('100.00'),
+            currency=self.eur,
+            date=date(2026, 1, 10),
+            exchange_rate_at_time=Decimal('1.120000'),
+        )
+        tx.refresh_from_db()
+        self.assertEqual(tx.exchange_rate_at_time, Decimal('1.120000'))
+
