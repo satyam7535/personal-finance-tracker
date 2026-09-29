@@ -2,29 +2,106 @@
 
 {% block title %}Transactions — Finance Tracker{% endblock %}
 
+{% block extra_css %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+    .page-header h2 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        margin: 0;
+    }
+    .filter-bar {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-end;
+        flex-wrap: wrap;
+    }
+    .filter-bar .form-group {
+        margin-bottom: 0;
+        min-width: 140px;
+    }
+    .type-badge {
+        padding: 0.25rem 0.6rem;
+        border-radius: var(--radius-pill);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+    }
+    .type-badge-income { background: #ecfdf5; color: #065f46; }
+    .type-badge-expense { background: #fef2f2; color: #991b1b; }
+    .type-badge-investment { background: #fffbeb; color: #92400e; }
+    .tx-link {
+        color: var(--text-main);
+        text-decoration: none;
+        font-weight: 500;
+        transition: var(--transition);
+    }
+    .tx-link:hover { color: var(--primary); }
+    .amount-income { color: var(--success); font-weight: 700; }
+    .amount-expense { color: var(--danger); font-weight: 700; }
+    .amount-investment { color: var(--warning); font-weight: 700; }
+    .converted-col { color: var(--text-muted); font-size: 0.9rem; }
+    .receipt-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.25rem 0.6rem;
+        background: rgba(79, 70, 229, 0.08);
+        color: var(--primary);
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 0.8rem;
+        font-weight: 600;
+        transition: var(--transition);
+    }
+    .receipt-link:hover { background: rgba(79, 70, 229, 0.15); }
+    .action-group {
+        display: flex;
+        gap: 0.4rem;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--text-muted);
+    }
+    .empty-state p { margin-bottom: 1rem; font-size: 1.1rem; }
+    .empty-state a { color: var(--primary); font-weight: 600; text-decoration: none; }
+    .empty-state a:hover { text-decoration: underline; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-    <h2 style="margin: 0;">Transactions</h2>
+<div class="page-header">
+    <h2>Transactions</h2>
     <a href="{% url 'finance:transaction_create' %}" class="btn btn-success">+ Add Transaction</a>
 </div>
 
 <!-- Filters -->
-<div class="card" style="margin-bottom: 1.5rem;">
-    <form method="get" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+<div class="card" style="margin-bottom: 2rem;">
+    <form method="get" class="filter-bar">
         {% for field in filter_form %}
-        <div class="form-group" style="margin-bottom: 0;">
+        <div class="form-group">
             <label for="{{ field.id_for_label }}">{{ field.label }}</label>
             {{ field }}
         </div>
         {% endfor %}
-        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
-        <a href="{% url 'finance:transaction_list' %}" class="btn btn-secondary btn-sm">Clear</a>
+        <div style="display: flex; gap: 0.5rem;">
+            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+            <a href="{% url 'finance:transaction_list' %}" class="btn btn-secondary btn-sm">Clear</a>
+        </div>
     </form>
 </div>
 
 <!-- Transaction Table -->
 <div class="card">
     {% if transactions %}
+    <div style="overflow-x: auto;">
     <table>
         <thead>
             <tr>
@@ -41,28 +118,20 @@
         <tbody>
             {% for item in transactions %}
             <tr>
-                <!-- prettier-ignore -->
-                <td><a href="{% url 'finance:transaction_detail' item.tx.pk %}"
-                        style="color:#2c3e50;text-decoration:none;font-weight:500;">{{ item.tx.date|date:"M d, Y" }}</a>
+                <td>
+                    <a href="{% url 'finance:transaction_detail' item.tx.pk %}" class="tx-link">{{ item.tx.date|date:"M d, Y" }}</a>
                 </td>
                 <td>
-                    <span style="padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.8rem; font-weight: 600;
-                        {% if item.tx.type == 'INCOME' %}background: #d4edda; color: #155724;
-                        {% elif item.tx.type == 'EXPENSE' %}background: #f8d7da; color: #721c24;
-                        {% else %}background: #fff3cd; color: #856404;{% endif %}">
+                    <span class="type-badge {% if item.tx.type == 'INCOME' %}type-badge-income{% elif item.tx.type == 'EXPENSE' %}type-badge-expense{% else %}type-badge-investment{% endif %}">
                         {{ item.tx.get_type_display }}
                     </span>
                 </td>
                 <td>{{ item.tx.category.name }}</td>
                 <td>{{ item.tx.description|truncatewords:8|default:"—" }}</td>
-                <td style="font-weight: 600;
-                    {% if item.tx.type == 'INCOME' %}color: #27ae60;
-                    {% elif item.tx.amount < 0 %}color: #e67e22;
-                    {% elif item.tx.type == 'EXPENSE' %}color: #e74c3c;
-                    {% else %}color: #f39c12;{% endif %}">
+                <td class="{% if item.tx.type == 'INCOME' %}amount-income{% elif item.tx.type == 'EXPENSE' %}amount-expense{% else %}amount-investment{% endif %}">
                     {{ item.tx.currency.symbol }}{{ item.tx.amount }}
                 </td>
-                <td style="color: #555;">
+                <td class="converted-col">
                     {% if item.tx.currency.code != preferred_currency.code %}
                     {{ preferred_currency.symbol }}{{ item.converted }}
                     {% else %}
@@ -71,23 +140,27 @@
                 </td>
                 <td>
                     {% if item.tx.receipt %}
-                    <a href="{{ item.tx.receipt.url }}" target="_blank" class="btn btn-secondary btn-sm">View</a>
+                    <a href="{{ item.tx.receipt.url }}" target="_blank" class="receipt-link">📎 View</a>
                     {% else %}
-                    —
+                    <span style="color: var(--text-muted);">—</span>
                     {% endif %}
                 </td>
                 <td>
-                    <a href="{% url 'finance:transaction_edit' item.tx.pk %}" class="btn btn-primary btn-sm">Edit</a>
-                    <a href="{% url 'finance:transaction_delete' item.tx.pk %}" class="btn btn-danger btn-sm">Delete</a>
+                    <div class="action-group">
+                        <a href="{% url 'finance:transaction_edit' item.tx.pk %}" class="btn btn-primary btn-sm">Edit</a>
+                        <a href="{% url 'finance:transaction_delete' item.tx.pk %}" class="btn btn-danger btn-sm">Delete</a>
+                    </div>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
     {% else %}
-    <p style="text-align: center; color: #888; padding: 2rem;">
-        No transactions found. <a href="{% url 'finance:transaction_create' %}">Add your first transaction</a>.
-    </p>
+    <div class="empty-state">
+        <p>📄 No transactions found.</p>
+        <a href="{% url 'finance:transaction_create' %}">Add your first transaction</a>
+    </div>
     {% endif %}
 </div>
 {% endblock %}

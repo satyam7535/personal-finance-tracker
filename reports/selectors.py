@@ -14,7 +14,7 @@ Usage:
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import date
 
-from django.db.models import Sum, F, Value, DecimalField, Count
+from django.db.models import Sum, F, Value, DecimalField, Count, Subquery, OuterRef
 from django.db.models.functions import TruncMonth, Coalesce, ExtractYear, ExtractMonth
 
 from finance.models import Transaction, Category, Budget
@@ -31,8 +31,11 @@ def _to_preferred(qs, target_rate):
     Formula per row: amount * currency.exchange_rate_to_usd / target_rate
     aggregate(Sum(...)) → single Decimal.
     """
+    if not target_rate or target_rate <= 0:
+        target_rate = Decimal('1')
+        
     total = qs.annotate(
-        converted=F('amount') * F('currency__exchange_rate_to_usd') / Value(
+        converted=F('amount') * Coalesce(F('exchange_rate_at_time'), F('currency__exchange_rate_to_usd')) / Value(
             target_rate, output_field=DecimalField(max_digits=18, decimal_places=6)
         )
     ).aggregate(
@@ -94,6 +97,8 @@ def get_category_breakdown(user, txn_type=None, date_from=None, date_to=None):
     """
     target = get_user_preferred_currency(user)
     target_rate = target.exchange_rate_to_usd
+    if not target_rate or target_rate <= 0:
+        target_rate = Decimal('1')
 
     qs = _base_qs(user, date_from, date_to)
     if txn_type:
@@ -104,7 +109,7 @@ def get_category_breakdown(user, txn_type=None, date_from=None, date_to=None):
         .values('category__id', 'category__name', 'type')
         .annotate(
             raw_total=Sum(
-                F('amount') * F('currency__exchange_rate_to_usd') / Value(
+                F('amount') * Coalesce(F('exchange_rate_at_time'), F('currency__exchange_rate_to_usd')) / Value(
                     target_rate, output_field=DecimalField(max_digits=18, decimal_places=6)
                 )
             )
@@ -135,6 +140,8 @@ def get_monthly_trend(user, txn_type=None, months=6):
     """
     target = get_user_preferred_currency(user)
     target_rate = target.exchange_rate_to_usd
+    if not target_rate or target_rate <= 0:
+        target_rate = Decimal('1')
 
     today = date.today()
     # Start from N months ago (1st of that month)
@@ -156,7 +163,7 @@ def get_monthly_trend(user, txn_type=None, months=6):
         .annotate(
             raw_total=Coalesce(
                 Sum(
-                    F('amount') * F('currency__exchange_rate_to_usd') / Value(
+                    F('amount') * Coalesce(F('exchange_rate_at_time'), F('currency__exchange_rate_to_usd')) / Value(
                         target_rate,
                         output_field=DecimalField(max_digits=18, decimal_places=6)
                     )
@@ -209,21 +216,38 @@ def get_monthly_report(user, year, month):
     investment_bkdn, _ = get_category_breakdown(user, 'INVESTMENT', first_day, end)
 
     # Budget status for this month
+    spent_usd_sq = Transaction.objects.filter(
+        user=user,
+        type='EXPENSE',
+        category=OuterRef('category_id'),
+        date__year=year,
+        date__month=month,
+    ).values('category_id').annotate(
+        total=Sum(F('amount') * Coalesce(F('exchange_rate_at_time'), F('currency__exchange_rate_to_usd')))
+    ).values('total')
+
     budgets = Budget.objects.filter(
         user=user,
         month__year=year,
         month__month=month,
-    ).select_related('category')
+    ).select_related('category').annotate(
+        spent_usd=Coalesce(Subquery(spent_usd_sq, output_field=DecimalField(max_digits=18, decimal_places=6)), Value(Decimal('0.00')))
+    )
 
     budget_status = []
     for b in budgets:
+        budget_rate = b._budget_currency().exchange_rate_to_usd or Decimal('1')
+        spent = (b.spent_usd / budget_rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        pct = (spent / b.limit_amount * 100).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP) if b.limit_amount > 0 else Decimal('0.0')
+        is_overrun = spent > b.limit_amount
+        
         budget_status.append({
             'category': b.category.name,
             'limit': b.limit_amount,
-            'spent': b.spent,
-            'percentage': b.percentage_used,
-            'is_overrun': b.is_overrun,
-            'remaining': b.limit_amount - b.spent,
+            'spent': spent,
+            'percentage': pct,
+            'is_overrun': is_overrun,
+            'remaining': b.limit_amount - spent,
         })
 
     return {
@@ -282,22 +306,38 @@ def get_dashboard_summary(user):
     )
 
     # Budget alerts
+    spent_usd_sq = Transaction.objects.filter(
+        user=user,
+        type='EXPENSE',
+        category=OuterRef('category_id'),
+        date__year=today.year,
+        date__month=today.month,
+    ).values('category_id').annotate(
+        total=Sum(F('amount') * Coalesce(F('exchange_rate_at_time'), F('currency__exchange_rate_to_usd')))
+    ).values('total')
+
     budgets = Budget.objects.filter(
         user=user,
         month__year=today.year,
         month__month=today.month,
-    ).select_related('category')
+    ).select_related('category').annotate(
+        spent_usd=Coalesce(Subquery(spent_usd_sq, output_field=DecimalField(max_digits=18, decimal_places=6)), Value(Decimal('0.00')))
+    )
 
     budget_alerts = []
     for b in budgets:
-        pct = b.percentage_used
+        budget_rate = b._budget_currency().exchange_rate_to_usd or Decimal('1')
+        spent = (b.spent_usd / budget_rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        pct = (spent / b.limit_amount * 100).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP) if b.limit_amount > 0 else Decimal('0.0')
+        is_overrun = spent > b.limit_amount
+        
         if pct >= 80:
             budget_alerts.append({
                 'category': b.category.name,
                 'limit': b.limit_amount,
-                'spent': b.spent,
+                'spent': spent,
                 'percentage': pct,
-                'is_overrun': b.is_overrun,
+                'is_overrun': is_overrun,
             })
 
     return {

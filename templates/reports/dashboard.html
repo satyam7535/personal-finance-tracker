@@ -2,27 +2,98 @@
 
 {% block title %}Dashboard — Finance Tracker{% endblock %}
 
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+    .dashboard-header h2 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        margin: 0;
+    }
+    .dashboard-header .currency-badge {
+        padding: 0.35rem 0.8rem;
+        background: rgba(79, 70, 229, 0.1);
+        color: var(--primary);
+        font-size: 0.8rem;
+        font-weight: 700;
+        border-radius: var(--radius-pill);
+        letter-spacing: 0.05em;
+    }
+    .insight-item {
+        padding: 0.8rem 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.95rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        line-height: 1.6;
+    }
+    .insight-item:last-child { border-bottom: none; }
+    .insight-icon {
+        flex-shrink: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(79, 70, 229, 0.1);
+        border-radius: 8px;
+        font-size: 0.9rem;
+    }
+    .budget-status-badge {
+        padding: 0.25rem 0.6rem;
+        border-radius: var(--radius-pill);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+    }
+    .badge-overrun { background: #fef2f2; color: var(--danger); }
+    .badge-warning { background: #fffbeb; color: #b45309; }
+    .badge-ok { background: #ecfdf5; color: #065f46; }
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: var(--text-muted);
+    }
+    .empty-state p { margin-bottom: 1rem; font-size: 1rem; }
+    .empty-state a { color: var(--primary); font-weight: 600; text-decoration: none; }
+    .empty-state a:hover { text-decoration: underline; }
+    .tx-amount-income { color: var(--success); font-weight: 600; }
+    .tx-amount-expense { color: var(--danger); font-weight: 600; }
+    .tx-amount-investment { color: var(--warning); font-weight: 600; }
+</style>
+{% endblock %}
+
 {% block content %}
-<h2 style="margin-bottom: 1.5rem;">Dashboard <small style="font-size: 0.6em; color: #888;">({{ currency.code }})</small>
-</h2>
+<!-- ─── Header ────────────────────────────────────────────────── -->
+<div class="dashboard-header">
+    <h2>Dashboard</h2>
+    <span class="currency-badge">{{ currency.code }}</span>
+</div>
 
 <!-- ─── Stat Cards ─────────────────────────────────────────────── -->
-<div class="grid grid-4" style="margin-bottom: 1.5rem;">
+<div class="grid grid-4" style="margin-bottom: 2rem;">
     <div class="card stat-card income">
-        <div class="stat-value">{{ currency.symbol }}{{ income }}</div>
         <div class="stat-label">Income (this month)</div>
+        <div class="stat-value">{{ currency.symbol }}{{ income }}</div>
     </div>
     <div class="card stat-card expense">
-        <div class="stat-value">{{ currency.symbol }}{{ expense }}</div>
         <div class="stat-label">Expenses (this month)</div>
+        <div class="stat-value">{{ currency.symbol }}{{ expense }}</div>
     </div>
     <div class="card stat-card investment">
-        <div class="stat-value">{{ currency.symbol }}{{ investment }}</div>
         <div class="stat-label">Investments (this month)</div>
+        <div class="stat-value">{{ currency.symbol }}{{ investment }}</div>
     </div>
     <div class="card stat-card savings">
-        <div class="stat-value">{{ currency.symbol }}{{ savings }}</div>
         <div class="stat-label">Net Savings</div>
+        <div class="stat-value">{{ currency.symbol }}{{ savings }}</div>
     </div>
 </div>
 
@@ -40,22 +111,26 @@
         {% if expense_breakdown %}
         <canvas id="expenseChart" height="220"></canvas>
         {% else %}
-        <p style="text-align:center; color:#888; padding:2rem;">No expense data yet.</p>
+        <div class="empty-state">
+            <p>📊 No expense data yet.</p>
+            <a href="{% url 'finance:transaction_create' %}">Add a transaction to see your breakdown</a>
+        </div>
         {% endif %}
     </div>
 </div>
 
 <!-- ─── Insights ───────────────────────────────────────────────── -->
 {% if insights %}
-<div class="card" style="margin-top: 0;">
-    <h2>Insights</h2>
-    <ul style="list-style: none; padding: 0;">
+<div class="card">
+    <h2>💡 Insights</h2>
+    <div>
         {% for tip in insights %}
-        <li style="padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.95rem;">
-            💡 {{ tip }}
-        </li>
+        <div class="insight-item">
+            <div class="insight-icon">💡</div>
+            <span>{{ tip }}</span>
+        </div>
         {% endfor %}
-    </ul>
+    </div>
 </div>
 {% endif %}
 
@@ -63,7 +138,7 @@
 <div class="grid grid-2">
     <!-- Budget Alerts -->
     <div class="card">
-        <h2>Budget Alerts</h2>
+        <h2>🎯 Budget Alerts</h2>
         {% if budget_alerts %}
         <table>
             <thead>
@@ -76,16 +151,13 @@
             <tbody>
                 {% for a in budget_alerts %}
                 <tr>
-                    <td>{{ a.category }}</td>
+                    <td style="font-weight: 600;">{{ a.category }}</td>
                     <td>{{ currency.symbol }}{{ a.spent }} / {{ currency.symbol }}{{ a.limit }}</td>
                     <td>
                         {% if a.is_overrun %}
-                        <span
-                            style="padding:0.2rem 0.5rem;border-radius:3px;font-size:0.8rem;font-weight:600;background:#f8d7da;color:#721c24;">OVERRUN</span>
+                        <span class="budget-status-badge badge-overrun">OVERRUN</span>
                         {% else %}
-                        <span
-                            style="padding:0.2rem 0.5rem;border-radius:3px;font-size:0.8rem;font-weight:600;background:#fff3cd;color:#856404;">{{
-                            a.percentage }}%</span>
+                        <span class="budget-status-badge badge-warning">{{ a.percentage }}%</span>
                         {% endif %}
                     </td>
                 </tr>
@@ -93,13 +165,15 @@
             </tbody>
         </table>
         {% else %}
-        <p style="text-align:center; color:#888; padding:1rem;">All budgets on track! 🎉</p>
+        <div class="empty-state">
+            <p>🎉 All budgets on track!</p>
+        </div>
         {% endif %}
     </div>
 
     <!-- Recent Transactions -->
     <div class="card">
-        <h2>Recent Transactions</h2>
+        <h2>📋 Recent Transactions</h2>
         {% if recent_transactions %}
         <table>
             <thead>
@@ -114,23 +188,21 @@
                 <tr>
                     <td>{{ tx.date|date:"M d" }}</td>
                     <td>{{ tx.category.name }}</td>
-                    <td style="font-weight:600;
-                        {% if tx.type == 'INCOME' %}color:#27ae60;
-                        {% elif tx.type == 'EXPENSE' %}color:#e74c3c;
-                        {% else %}color:#f39c12;{% endif %}">
+                    <td class="{% if tx.type == 'INCOME' %}tx-amount-income{% elif tx.type == 'EXPENSE' %}tx-amount-expense{% else %}tx-amount-investment{% endif %}">
                         {{ tx.currency.symbol }}{{ tx.amount }}
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-        <div style="text-align:right; margin-top:0.5rem;">
+        <div style="text-align: right; margin-top: 1rem;">
             <a href="{% url 'finance:transaction_list' %}" class="btn btn-secondary btn-sm">View All →</a>
         </div>
         {% else %}
-        <p style="text-align:center; color:#888; padding:1rem;">
-            No transactions yet. <a href="{% url 'finance:transaction_create' %}">Add one</a>.
-        </p>
+        <div class="empty-state">
+            <p>No transactions yet.</p>
+            <a href="{% url 'finance:transaction_create' %}">Add your first transaction</a>
+        </div>
         {% endif %}
     </div>
 </div>
@@ -139,6 +211,10 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
+    // ─── Chart defaults ──────────────────────────────────────────
+    Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+    Chart.defaults.color = '#6b7280';
+
     // ─── Trend Chart (Bar) ────────────────────────────────────────
     const trendCtx = document.getElementById('trendChart');
     if (trendCtx) {
@@ -155,34 +231,45 @@
                         {
                             label: 'Income',
                             data: trendIncome,
-                            backgroundColor: 'rgba(39, 174, 96, 0.7)',
-                            borderColor: '#27ae60',
+                            backgroundColor: 'rgba(16, 185, 129, 0.75)',
+                            borderColor: '#10b981',
                             borderWidth: 1,
-                            borderRadius: 4,
+                            borderRadius: 8,
+                            borderSkipped: false,
                         },
                         {
                             label: 'Expenses',
                             data: trendExpense,
-                            backgroundColor: 'rgba(231, 76, 60, 0.7)',
-                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(239, 68, 68, 0.75)',
+                            borderColor: '#ef4444',
                             borderWidth: 1,
-                            borderRadius: 4,
+                            borderRadius: 8,
+                            borderSkipped: false,
                         }
                     ]
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { position: 'bottom' } },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { usePointStyle: true, padding: 20 }
+                        }
+                    },
                     scales: {
                         y: {
                             beginAtZero: true,
+                            grid: { color: 'rgba(0,0,0,0.04)' },
                             ticks: { callback: function(v) { return '{{ currency.symbol }}' + v; } }
+                        },
+                        x: {
+                            grid: { display: false }
                         }
                     }
                 }
             });
         } else {
-            trendCtx.parentElement.innerHTML += '<p style="text-align:center;color:#888;padding:2rem;">No trend data yet. Add transactions to see the chart.</p>';
+            trendCtx.parentElement.innerHTML += '<div class="empty-state"><p>📈 No trend data yet. Add transactions to see the chart.</p></div>';
         }
     }
 
@@ -194,8 +281,8 @@
 
         if (cats.length > 0) {
             const palette = [
-                '#e74c3c', '#3498db', '#f39c12', '#9b59b6', '#1abc9c',
-                '#e67e22', '#2ecc71', '#34495e', '#e91e63', '#00bcd4'
+                '#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6', '#10b981',
+                '#f97316', '#06b6d4', '#ec4899', '#84cc16', '#6366f1'
             ];
             new Chart(expCtx, {
                 type: 'doughnut',
@@ -204,14 +291,20 @@
                     datasets: [{
                         data: vals,
                         backgroundColor: palette.slice(0, cats.length),
-                        borderWidth: 2,
+                        borderWidth: 3,
                         borderColor: '#fff',
+                        hoverBorderWidth: 0,
+                        hoverOffset: 8,
                     }]
                 },
                 options: {
                     responsive: true,
+                    cutout: '65%',
                     plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 12 } }
+                        legend: {
+                            position: 'bottom',
+                            labels: { usePointStyle: true, padding: 16, boxWidth: 8 }
+                        }
                     }
                 }
             });

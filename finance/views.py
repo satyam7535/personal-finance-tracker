@@ -3,6 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import ProtectedError
+from django.http import FileResponse, Http404
+import mimetypes
 
 from .models import Transaction, Category, Budget, Notification
 from .forms import TransactionForm, TransactionFilterForm, CategoryForm, BudgetForm
@@ -144,6 +146,21 @@ def transaction_delete(request, pk):
     })
 
 
+@login_required
+def transaction_receipt_download(request, pk):
+    """Securely serve transaction receipts only to the owner."""
+    transaction = get_object_or_404(Transaction, pk=pk)
+    
+    if transaction.user_id != request.user.id:
+        raise PermissionDenied
+        
+    if not transaction.receipt:
+        raise Http404("Receipt not found")
+        
+    content_type, _ = mimetypes.guess_type(transaction.receipt.name)
+    return FileResponse(transaction.receipt.open(), content_type=content_type)
+
+
 # ─── Category Views ──────────────────────────────────────────────────────────
 
 @login_required
@@ -213,20 +230,48 @@ def category_delete(request, pk):
 @login_required
 def budget_list(request):
     """List all budgets for the current user with progress."""
-    budgets = Budget.objects.filter(user=request.user).select_related('category', 'currency')
+    budgets = list(Budget.objects.filter(user=request.user).select_related('category', 'currency'))
     preferred = get_user_preferred_currency(request.user)
+
+    # Pre-calculate expenses to avoid N+1 queries
+    from django.db.models import Sum, F
+    from django.db.models.functions import Coalesce, TruncMonth
+    from decimal import Decimal, ROUND_HALF_UP
+    
+    expenses = Transaction.objects.filter(
+        user=request.user, 
+        type='EXPENSE',
+        category__in={b.category_id for b in budgets} if budgets else []
+    ).annotate(
+        month_trunc=TruncMonth('date')
+    ).values('category_id', 'month_trunc').annotate(
+        total_usd=Sum(F('amount') * Coalesce(F('exchange_rate_at_time'), F('currency__exchange_rate_to_usd')))
+    )
+    expense_map = {(e['category_id'], e['month_trunc']): e['total_usd'] for e in expenses}
 
     # Enrich with computed properties for template
     budget_data = []
+    target_rate = preferred.exchange_rate_to_usd or Decimal('1')
+    
     for budget in budgets:
-        limit_display = budget.limit_in_preferred
-        spent_display = budget.spent_in_preferred
+        spent_usd = expense_map.get((budget.category_id, budget.month), Decimal('0.00'))
+        budget_cur = budget._budget_currency()
+        budget_rate = budget_cur.exchange_rate_to_usd or Decimal('1')
+        
+        limit_usd = budget.limit_amount * budget_rate
+        limit_display = (limit_usd / target_rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        spent_display = (spent_usd / target_rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        
+        spent_in_budget_currency = (spent_usd / budget_rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        percentage = (spent_in_budget_currency / budget.limit_amount * 100).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP) if budget.limit_amount > 0 else Decimal('0.0')
+        is_overrun = spent_in_budget_currency > budget.limit_amount
+        
         budget_data.append({
             'budget': budget,
             'spent': spent_display,
             'limit': limit_display,
-            'percentage': budget.percentage_used,
-            'is_overrun': budget.is_overrun,
+            'percentage': percentage,
+            'is_overrun': is_overrun,
             'remaining': limit_display - spent_display,
         })
 

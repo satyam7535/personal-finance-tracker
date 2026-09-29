@@ -2,9 +2,64 @@
 
 {% block title %}Categories — Finance Tracker{% endblock %}
 
+{% block extra_css %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+    .page-header h2 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        margin: 0;
+    }
+    .category-type-header {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .category-type-header::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+    }
+    .type-income { color: var(--success); }
+    .type-expense { color: var(--danger); }
+    .type-investment { color: var(--warning); }
+    .txn-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 28px;
+        height: 24px;
+        padding: 0 0.5rem;
+        background: rgba(107, 114, 128, 0.1);
+        color: var(--text-muted);
+        border-radius: var(--radius-pill);
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--text-muted);
+    }
+    .empty-state p { margin-bottom: 1rem; font-size: 1.1rem; }
+    .empty-state a { color: var(--primary); font-weight: 600; text-decoration: none; }
+    .empty-state a:hover { text-decoration: underline; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-    <h2 style="margin: 0;">Categories</h2>
+<div class="page-header">
+    <h2>Categories</h2>
     <a href="{% url 'finance:category_create' %}" class="btn btn-success">+ Add Category</a>
 </div>
 
@@ -13,10 +68,7 @@
     {% regroup categories by get_type_display as type_groups %}
     {% for group in type_groups %}
     <div class="card">
-        <h3 style="margin-bottom: 1rem;
-            {% if group.grouper == 'Income' %}color: #27ae60;
-            {% elif group.grouper == 'Expense' %}color: #e74c3c;
-            {% else %}color: #f39c12;{% endif %}">
+        <h3 class="category-type-header {% if group.grouper == 'Income' %}type-income{% elif group.grouper == 'Expense' %}type-expense{% else %}type-investment{% endif %}">
             {{ group.grouper }}
         </h3>
         <table>
@@ -30,8 +82,8 @@
             <tbody>
                 {% for cat in group.list %}
                 <tr>
-                    <td>{{ cat.name }}</td>
-                    <td>{{ cat.transaction_count }}</td>
+                    <td style="font-weight: 500;">{{ cat.name }}</td>
+                    <td><span class="txn-count">{{ cat.transaction_count }}</span></td>
                     <td>
                         <a href="{% url 'finance:category_delete' cat.pk %}" class="btn btn-danger btn-sm">Delete</a>
                     </td>
@@ -44,9 +96,10 @@
 </div>
 {% else %}
 <div class="card">
-    <p style="text-align: center; color: #888; padding: 2rem;">
-        No categories yet. <a href="{% url 'finance:category_create' %}">Create your first category</a>.
-    </p>
+    <div class="empty-state">
+        <p>🏷️ No categories yet.</p>
+        <a href="{% url 'finance:category_create' %}">Create your first category</a>
+    </div>
 </div>
 {% endif %}
 {% endblock %}

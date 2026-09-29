@@ -11,6 +11,7 @@ personalized financial advice. Falls back to mock insights on error.
 """
 
 import json
+import hashlib
 from decimal import Decimal
 from datetime import date, timedelta
 
@@ -337,6 +338,16 @@ def get_ai_insights(user):
     """
     context = _gather_financial_context(user)
 
+    from django.core.cache import cache
+    context_hash = hashlib.md5(f"{context['transaction_count']}_{context['savings']}".encode()).hexdigest()
+    cache_key = f"ai_insights_{user.id}_{context_hash}"
+    
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        # Restore cached context (which might have minor time differences)
+        cached_data['context'] = context
+        return cached_data
+
     gemini_key = getattr(settings, 'GEMINI_API_KEY', None)
     openai_key = getattr(settings, 'OPENAI_API_KEY', None)
 
@@ -353,9 +364,14 @@ def get_ai_insights(user):
         ai_powered = False
         provider = 'Smart Analysis'
 
-    return {
+    result = {
         'insights': insights,
         'context': context,
         'ai_powered': ai_powered,
         'provider': provider,
     }
+    
+    # Cache for 24 hours (will auto-invalidate if context hash changes)
+    cache.set(cache_key, result, timeout=86400)
+    
+    return result

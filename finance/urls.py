@@ -10,6 +10,7 @@ urlpatterns = [
     path('transactions/<int:pk>/', views.transaction_detail, name='transaction_detail'),
     path('transactions/<int:pk>/edit/', views.transaction_edit, name='transaction_edit'),
     path('transactions/<int:pk>/delete/', views.transaction_delete, name='transaction_delete'),
+    path('transactions/<int:pk>/receipt/', views.transaction_receipt_download, name='transaction_receipt_download'),
 
     # Categories
     path('categories/', views.category_list, name='category_list'),

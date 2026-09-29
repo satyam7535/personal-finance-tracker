@@ -102,6 +102,10 @@ class Transaction(models.Model):
         related_name='transactions',
         help_text='Currency of this transaction.'
     )
+    exchange_rate_at_time = models.DecimalField(
+        max_digits=12, decimal_places=6, null=True, blank=True,
+        help_text='Exchange rate to USD at the time of transaction.'
+    )
     date = models.DateField(default=timezone.now)
     description = models.TextField(blank=True, default='')
     receipt = models.FileField(
@@ -162,14 +166,22 @@ class Transaction(models.Model):
             self.amount = Decimal(str(self.amount)).quantize(
                 Decimal('0.01'), rounding=ROUND_HALF_UP
             )
+        
+        # Lock in the exchange rate at the time of creation
+        if not self.exchange_rate_at_time and self.currency_id:
+            self.exchange_rate_at_time = self.currency.exchange_rate_to_usd
+            
         self.full_clean()
         super().save(*args, **kwargs)
 
     @property
     def amount_in_usd(self):
-        """Convert amount to USD using stored exchange rate."""
-        if self.currency and self.currency.exchange_rate_to_usd:
-            return (self.amount * self.currency.exchange_rate_to_usd).quantize(
+        """Convert amount to USD using locked exchange rate."""
+        rate = self.exchange_rate_at_time
+        if not rate and self.currency:
+            rate = self.currency.exchange_rate_to_usd
+        if rate:
+            return (self.amount * rate).quantize(
                 Decimal('0.01'), rounding=ROUND_HALF_UP
             )
         return self.amount
@@ -262,6 +274,7 @@ class Budget(models.Model):
         normalised to the budget's own currency via USD.
         """
         from django.db.models import Sum, F
+        from django.db.models.functions import Coalesce
 
         budget_cur = self._budget_currency()
         budget_rate = budget_cur.exchange_rate_to_usd or Decimal('1')
@@ -274,7 +287,7 @@ class Budget(models.Model):
             date__year=self.month.year,
             date__month=self.month.month,
         ).aggregate(
-            total=Sum(F('amount') * F('currency__exchange_rate_to_usd'))
+            total=Sum(F('amount') * Coalesce(F('exchange_rate_at_time'), F('currency__exchange_rate_to_usd')))
         )['total'] or Decimal('0.00')
 
         # Convert USD total to budget's currency
@@ -299,6 +312,7 @@ class Budget(models.Model):
         Total spent converted to the user's preferred display currency.
         """
         from django.db.models import Sum, F
+        from django.db.models.functions import Coalesce
         from finance.currency_utils import get_user_preferred_currency
 
         target = get_user_preferred_currency(self.user)
@@ -311,7 +325,7 @@ class Budget(models.Model):
             date__year=self.month.year,
             date__month=self.month.month,
         ).aggregate(
-            total=Sum(F('amount') * F('currency__exchange_rate_to_usd'))
+            total=Sum(F('amount') * Coalesce(F('exchange_rate_at_time'), F('currency__exchange_rate_to_usd')))
         )['total'] or Decimal('0.00')
 
         return (total_usd / target_rate).quantize(

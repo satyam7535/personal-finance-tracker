@@ -167,17 +167,29 @@ def _check_budget_overrun(user, transaction):
             notification_type=ntype,
         )
 
-        # Send email alert via Resend SDK
+        # Send email alert via Resend SDK asynchronously
         if user.email and settings.RESEND_API_KEY:
-            try:
-                resend.Emails.send({
-                    "from": settings.DEFAULT_FROM_EMAIL,
-                    "to": [user.email],
-                    "subject": f'[Finance Tracker] {budget.category.name} — {ntype.replace("_", " ").title()}',
-                    "html": f'<p>{msg}</p>',
-                })
-            except Exception as e:
-                logger.warning(f'Email to {user.email} failed: {e}')
+            import threading
+            
+            def send_email_task(email, subject, html_content):
+                try:
+                    resend.Emails.send({
+                        "from": settings.DEFAULT_FROM_EMAIL,
+                        "to": [email],
+                        "subject": subject,
+                        "html": html_content,
+                    })
+                except Exception as e:
+                    logger.warning(f'Email to {email} failed: {e}')
+
+            subject = f'[Finance Tracker] {budget.category.name} — {ntype.replace("_", " ").title()}'
+            html = f'<p>{msg}</p>'
+            
+            # Fire and forget thread to avoid blocking the HTTP response
+            threading.Thread(
+                target=send_email_task, 
+                args=(user.email, subject, html)
+            ).start()
 
             budget.last_notified_at = timezone.now()
             budget.save(update_fields=['last_notified_at'])
